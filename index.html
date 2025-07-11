@@ -3363,6 +3363,11 @@
                     this.nextMilestoneIndex++;
                 }
             };
+
+            pauseGameForReward = () => {
+                this.gameState.gameStatus = 'reward-selection';
+                this.showRewardSelection();
+            };
         }
 
         // === Add after GlassCombatArena class definition or at the end of the script ===
