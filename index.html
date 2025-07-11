@@ -892,6 +892,9 @@
                     { text: '방어력', type: 'armor', value: 5, price: 2000 },
                     { text: '탄약 자동 회복', type: 'ammo_regen', value: 1, price: 1800 }
                 ];
+
+                // 1. GlassCombatArena 클래스 생성자에 bossActive 플래그 추가
+                this.bossActive = false;
             }
             
             // 캔버스 크기를 창 크기에 맞게 조정
@@ -1414,13 +1417,11 @@
             
             // 초기 웨이브 적 생성 및 아이템 드롭
             spawnInitialWave = () => {
-                if (this._spawningWave) return;
-                this._spawningWave = true;
-                if (this.gameState.gameStatus !== 'spawning') { this._spawningWave = false; return; }
+                if (this.gameState.gameStatus !== 'spawning') return;
                 let enemyCount;
                 if (this.gameState.wave % 10 === 0) {
-                    // 이미 보스가 있으면 추가 소환 금지
-                    if (this.gameState.enemies.some(e => e.type && e.type.startsWith('boss'))) return;
+                    // robust: bossActive 플래그로 보스 중복 소환 완전 방지
+                    if (this.bossActive) return;
                     const bossTypes = [
                         'boss_alpha','boss_beta','boss_gamma','boss_delta','boss_epsilon','boss_zeta','boss_eta','boss_theta'
                     ];
@@ -1428,6 +1429,7 @@
                     const bossData = this.ENEMY_TYPES[bossType];
                     this.showMessage(`${bossData.name} 등장!`, '강력한 보스가 나타났습니다!', 2000);
                     this.gameState.enemies.push(this.createEnemy(bossType));
+                    this.bossActive = true;
                     return;
                 } else if (this.gameState.wave === 1) {
                     enemyCount = 3;
@@ -2192,6 +2194,8 @@
                                 if (enemy.health <= 0) {
                                     this.addScore(enemy.points || 100);
                                     if (Math.random() < 0.4) this.gameState.items.push(this.createItem(enemy.x, enemy.y));
+                                    // 보스가 죽으면 bossActive 해제
+                                    if (enemy.type && enemy.type.startsWith('boss')) this.bossActive = false;
                                     this.gameState.enemies = this.gameState.enemies.filter(e => e !== enemy);
                                 }
                                 projectilesToRemove.add(i);
