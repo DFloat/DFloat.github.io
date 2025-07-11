@@ -872,6 +872,26 @@
                 this.upgrades = { gun: 0, melee: 0, health: 0, speed: 0, cooldown: 0 };
                 this.scoreMilestones = [1000, 2000, 3000, 5000, 8000, 12000, 18000, 25000, 35000, 50000];
                 this.nextMilestoneIndex = 0;
+
+                // 1. SHOP_ITEMS를 JS에 명확히 정의 (GlassCombatArena 클래스 내 constructor에 추가)
+                this.SHOP_ITEMS = [
+                    { text: '+100 최대 체력', type: 'maxHealth', value: 100, price: 1000 },
+                    { text: '+50 현재 체력', type: 'currentHealth', value: 50, price: 700 },
+                    { text: '+5 공격력', type: 'damage', value: 5, price: 1200 },
+                    { text: '+1 이동 속도', type: 'speed', value: 1, price: 900 },
+                    { text: '+1 다중 발사', type: 'multishot', value: 1, price: 1500 },
+                    { text: '회전 칼날', type: 'orbiting_knife', value: 1, price: 2000 },
+                    { text: '관통 사격', type: 'piercing_shot', value: 1, price: 1800 },
+                    { text: '폭발 사격', type: 'explosive_shot', value: 1, price: 1800 },
+                    { text: '도탄 사격', type: 'ricochet_shot', value: 1, price: 1800 },
+                    { text: '유도 사격', type: 'homing_shot', value: 1, price: 1800 },
+                    { text: '분열 사격', type: 'split_shot', value: 1, price: 1800 },
+                    { text: '흡혈', type: 'life_steal', value: 0.05, price: 2200 },
+                    { text: '치명타 확률', type: 'crit_chance', value: 0.05, price: 2000 },
+                    { text: '재사용 대기시간 감소', type: 'cooldown_reduction', value: 0.05, price: 2000 },
+                    { text: '방어력', type: 'armor', value: 5, price: 2000 },
+                    { text: '탄약 자동 회복', type: 'ammo_regen', value: 1, price: 1800 }
+                ];
             }
             
             // 캔버스 크기를 창 크기에 맞게 조정
@@ -1133,11 +1153,11 @@
                 let enemyData = { ...this.ENEMY_TYPES[type] };
                 // 스케일링: 웨이브가 오를수록 체력/공격력/속도 증가 (보스는 더 강하게)
                 if (type === 'boss') {
-                    const scale = 1 + (this.gameState.wave / 10);
-                    enemyData.health = Math.floor(enemyData.health * scale);
+                    const scale = 1 + (this.gameState.wave / 12); // 20% 완화
+                    enemyData.health = Math.floor(enemyData.health * scale * 0.8);
                     enemyData.maxHealth = enemyData.health;
-                    enemyData.speed = enemyData.speed * (1 + (this.gameState.wave / 30));
-                    enemyData.damage = Math.floor(enemyData.damage * scale);
+                    enemyData.speed = enemyData.speed * (1 + (this.gameState.wave / 36)); // 20% 완화
+                    enemyData.damage = Math.floor(enemyData.damage * scale * 0.8);
                     enemyData.points = Math.floor(enemyData.points * scale);
                     // 스킬 쿨타임 초기화
                     enemyData.lastMissile = 0;
@@ -1150,11 +1170,11 @@
                     enemyData.invincibleEndTime = 0;
                     this.showMessage('보스가 등장했습니다!', enemyData.name, 2000);
                 } else {
-                    const scale = 1 + (this.gameState.wave - 1) * 0.15;
-                    enemyData.health = Math.floor(enemyData.health * scale);
+                    const scale = 1 + (this.gameState.wave - 1) * 0.12; // 20% 완화
+                    enemyData.health = Math.floor(enemyData.health * scale * 0.8);
                     enemyData.maxHealth = enemyData.health;
-                    enemyData.speed = enemyData.speed * (1 + (this.gameState.wave - 1) * 0.05);
-                    enemyData.damage = Math.floor(enemyData.damage * scale);
+                    enemyData.speed = enemyData.speed * (1 + (this.gameState.wave - 1) * 0.04); // 20% 완화
+                    enemyData.damage = Math.floor(enemyData.damage * scale * 0.8);
                     enemyData.points = Math.floor(enemyData.points * scale);
                 }
                 // 신규 적/보스 등장 메시지
@@ -1394,7 +1414,9 @@
             
             // 초기 웨이브 적 생성 및 아이템 드롭
             spawnInitialWave = () => {
-                if (this.gameState.gameStatus !== 'spawning') return;
+                if (this._spawningWave) return;
+                this._spawningWave = true;
+                if (this.gameState.gameStatus !== 'spawning') { this._spawningWave = false; return; }
                 let enemyCount;
                 if (this.gameState.wave % 10 === 0) {
                     // 이미 보스가 있으면 추가 소환 금지
@@ -1410,15 +1432,15 @@
                 } else if (this.gameState.wave === 1) {
                     enemyCount = 3;
                 } else if (this.gameState.wave === 2) {
-                    enemyCount = 5;
+                    enemyCount = 4;
                 } else if (this.gameState.wave === 3) {
-                    enemyCount = 7;
+                    enemyCount = 5;
                 } else if (this.gameState.wave <= 10) {
-                    enemyCount = Math.min(10, 7 + (this.gameState.wave - 3) * 1);
+                    enemyCount = Math.min(7, 5 + (this.gameState.wave - 3));
                 } else if (this.gameState.wave <= 15) {
-                    enemyCount = Math.min(15, 10 + (this.gameState.wave - 10) * 1);
+                    enemyCount = Math.min(10, 7 + (this.gameState.wave - 10));
                 } else {
-                    enemyCount = Math.min(20, 15 + (this.gameState.wave - 15) * 1);
+                    enemyCount = Math.min(12, 10 + (this.gameState.wave - 15));
                 }
                 // 웨이브별로 적 타입 다양화
                 for (let i = 0; i < enemyCount; i++) {
@@ -1433,29 +1455,30 @@
                 }
                 
                 // 아이템 생성 (전체적으로 감소, 탄약은 유지/증가)
-                const totalItemCount = Math.min(5, Math.floor(this.gameState.wave / 3) + 2); // 최대 5개, 웨이브에 따라 더 많이
+                const totalItemCount = Math.min(6, Math.floor(this.gameState.wave / 2) + 3); // 최대 6개, 더 많이
                 let ammoItemCount = 0;
-                if (this.gameState.wave >= 5) { // 웨이브 5부터는 탄약 1개 보장
+                if (this.gameState.wave >= 3) { // 웨이브 3부터는 탄약 1개 보장
                     ammoItemCount = 1;
                 }
                 
                 for (let i = 0; i < totalItemCount; i++) {
                     setTimeout(() => {
                         let itemToCreate;
-                        // 아군 소환 아이템 드롭 확률 (예: 10%)
-                        if (Math.random() < 0.1) { 
+                        // 아군 소환 아이템 드롭 확률 (예: 12%)
+                        if (Math.random() < 0.12) { 
                             itemToCreate = this.ITEM_TYPES.find(item => item.type === 'ally_summon');
-                        } else if (ammoItemCount > 0 && Math.random() < 0.4) { // 탄약 드롭 확률 80% -> 40%로 하향
+                        } else if (ammoItemCount > 0 && Math.random() < 0.5) { // 탄약 드롭 확률 50%로 상향
                             itemToCreate = this.ITEM_TYPES.find(item => item.type === 'ammo');
                             ammoItemCount--;
-                        } else if (Math.random() < 0.25) { // 다중 발사 아이템 25% 확률로 우선 등장
+                        } else if (Math.random() < 0.3) { // 다중 발사 아이템 30% 확률로 우선 등장
                             itemToCreate = this.ITEM_TYPES.find(item => item.type === 'multishot');
+                        } else if (Math.random() < 0.2) { // 체력 아이템 20% 확률로 등장
+                            itemToCreate = this.ITEM_TYPES.find(item => item.type === 'health');
                         } else {
-                            // 탄약/다중발사/아군소환이 아니면 무작위 아이템
-                            const nonSpecialItems = this.ITEM_TYPES.filter(item => item.type !== 'ammo' && item.type !== 'ally_summon' && item.type !== 'multishot');
+                            // 탄약/다중발사/아군소환/체력 아니면 무작위 아이템
+                            const nonSpecialItems = this.ITEM_TYPES.filter(item => item.type !== 'ammo' && item.type !== 'ally_summon' && item.type !== 'multishot' && item.type !== 'health');
                             itemToCreate = nonSpecialItems[Math.floor(Math.random() * nonSpecialItems.length)];
                         }
-
                         this.gameState.items.push(this.createItem(
                             Math.random() * (this.canvas.width - 40) + 20,
                             Math.random() * (this.canvas.height - 200) + 50
@@ -1470,6 +1493,8 @@
 
                     }, i * 3000);
                 }
+                // 보스 웨이브 끝나면 플래그 해제
+                setTimeout(() => { this._spawningWave = false; }, 2000);
             }
             
             // 캐릭터 (플레이어 및 적) 상태 업데이트 (새로운 적 AI 로직 추가)
@@ -3589,6 +3614,15 @@
           };
           document.getElementById('closeShopButton').onclick = function() {
             document.getElementById('shopPopup').style.display = 'none';
+          };
+          // 퀘스트 버튼 열기
+          document.getElementById('questButton').onclick = function() {
+            document.getElementById('questPopup').style.display = 'block';
+            document.getElementById('questList').innerHTML = '<div>예시 퀘스트: 5웨이브 돌파<br>예시 퀘스트: 2000점 달성<br>예시 퀘스트: 보스 처치</div>';
+          };
+          // 퀘스트 팝업 닫기
+          document.getElementById('closeQuestButton').onclick = function() {
+            document.getElementById('questPopup').style.display = 'none';
           };
         };
 
