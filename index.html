@@ -47,7 +47,6 @@
             padding: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             color: #fff;
-            font-weight: bold;
         }
         
         /* HUD (Head-Up Display) 스타일: 왼쪽 상단 고정, flexbox로 내부 요소 정렬 */
@@ -319,15 +318,14 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
-        #shopPopup h2, #shopList {
+        #shopPopup h2 {
             color: #fff;
             font-weight: bold;
         }
 
-        #shopButton {
-            background: #ffe066;
+        #shopList {
             color: #fff;
-            font-weight: bold;
+            font-weight: normal;
         }
 
         /* --- 2. 상점 UI/로직: 점수로 패시브 업그레이드 구매 --- */
@@ -367,13 +365,13 @@
                 itemDiv.style.padding = '10px 0';
                 itemDiv.style.borderBottom = '1px solid rgba(255,255,255,0.15)';
                 itemDiv.style.color = '#fff';
-                itemDiv.style.fontWeight = 'bold';
                 const label = document.createElement('span');
                 label.textContent = `${item.text}`;
                 const price = document.createElement('span');
                 price.textContent = `${item.price}점`;
                 price.style.marginLeft = '16px';
                 price.style.color = affordable ? '#ffe066' : '#aaa';
+                price.style.fontWeight = 'normal';
                 const buyBtn = document.createElement('button');
                 buyBtn.textContent = affordable ? '구매' : '구매불가';
                 buyBtn.disabled = !affordable;
@@ -2127,14 +2125,26 @@
                             const dist = Math.sqrt(dx*dx + dy*dy);
                             if (dist < minDist) { minDist = dist; nearest = enemy; }
                         }
+                        // Homing parameters
+                        const maxTurn = (p.homingStrength || 0.08) * Math.PI; // 최대 회전 각도 (라디안)
+                        const speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy) || 8;
                         if (nearest) {
                             const dx = nearest.x + nearest.width/2 - p.x;
                             const dy = nearest.y + nearest.height/2 - p.y;
-                            const angle = Math.atan2(dy, dx);
-                            const speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy) || 10;
-                            const homingStrength = p.homingStrength || 0.08;
-                            p.vx = p.vx * (1-homingStrength) + Math.cos(angle)*speed*homingStrength;
-                            p.vy = p.vy * (1-homingStrength) + Math.sin(angle)*speed*homingStrength;
+                            const targetAngle = Math.atan2(dy, dx);
+                            let currentAngle = Math.atan2(p.vy, p.vx);
+                            let delta = targetAngle - currentAngle;
+                            // -PI ~ PI로 보정
+                            while (delta > Math.PI) delta -= 2*Math.PI;
+                            while (delta < -Math.PI) delta += 2*Math.PI;
+                            // 회전 각도 제한
+                            if (Math.abs(delta) > maxTurn) delta = maxTurn * Math.sign(delta);
+                            const newAngle = currentAngle + delta;
+                            p.vx = Math.cos(newAngle) * speed;
+                            p.vy = Math.sin(newAngle) * speed;
+                        } else {
+                            // 적이 없으면 기존 방향/속도 유지 (정지하지 않음)
+                            // 아무것도 하지 않음
                         }
                     }
                 }
@@ -2815,6 +2825,9 @@
                         this.hideRewardSelection();
                         this.gameState.gameStatus = 'playing';
                         this.updateHUD();
+                        if (typeof this.gameLoop === 'function') {
+                            this.gameLoop();
+                        }
                     });
                     rewardOptionsEl.appendChild(button);
                 });
@@ -3473,13 +3486,13 @@
                     itemDiv.style.padding = '10px 0';
                     itemDiv.style.borderBottom = '1px solid rgba(255,255,255,0.15)';
                     itemDiv.style.color = '#fff';
-                    itemDiv.style.fontWeight = 'bold';
                     const label = document.createElement('span');
                     label.textContent = `${item.text}`;
                     const price = document.createElement('span');
                     price.textContent = `${item.price}점`;
                     price.style.marginLeft = '16px';
                     price.style.color = affordable ? '#ffe066' : '#aaa';
+                    price.style.fontWeight = 'normal';
                     const buyBtn = document.createElement('button');
                     buyBtn.textContent = affordable ? '구매' : '구매불가';
                     buyBtn.disabled = !affordable;
