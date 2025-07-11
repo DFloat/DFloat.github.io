@@ -1358,7 +1358,7 @@
                     this.gameState.enemies.push(this.createEnemy(bossType));
                     return;
                 } else if (this.gameState.wave <= 3) {
-                    enemyCount = Math.floor(wave * 0.8) + 1;
+                    enemyCount = Math.floor(this.gameState.wave * 0.8) + 1;
                     enemyCount = Math.floor(this.gameState.wave * 1.2) + 2; // 2-5마리
                 } else if (this.gameState.wave <= 10) {
                     enemyCount = Math.floor(this.gameState.wave * 1.1) + 3; // 5-14마리
