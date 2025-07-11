@@ -1418,9 +1418,8 @@
             // 초기 웨이브 적 생성 및 아이템 드롭
             spawnInitialWave = () => {
                 if (this.gameState.gameStatus !== 'spawning') return;
-                let enemyCount;
                 if (this.gameState.wave % 10 === 0) {
-                    // robust: bossActive 플래그로 보스 중복 소환 완전 방지
+                    // 보스 웨이브: 반드시 1마리만 소환
                     if (this.bossActive) return;
                     const bossTypes = [
                         'boss_alpha','boss_beta','boss_gamma','boss_delta','boss_epsilon','boss_zeta','boss_eta','boss_theta'
@@ -1430,30 +1429,32 @@
                     this.showMessage(`${bossData.name} 등장!`, '강력한 보스가 나타났습니다!', 2000);
                     this.gameState.enemies.push(this.createEnemy(bossType));
                     this.bossActive = true;
-                    return;
-                } else if (this.gameState.wave === 1) {
-                    enemyCount = 3;
-                } else if (this.gameState.wave === 2) {
-                    enemyCount = 4;
-                } else if (this.gameState.wave === 3) {
-                    enemyCount = 5;
-                } else if (this.gameState.wave <= 10) {
-                    enemyCount = Math.min(7, 5 + (this.gameState.wave - 3));
-                } else if (this.gameState.wave <= 15) {
-                    enemyCount = Math.min(10, 7 + (this.gameState.wave - 10));
                 } else {
-                    enemyCount = Math.min(12, 10 + (this.gameState.wave - 15));
-                }
-                // 웨이브별로 적 타입 다양화
-                for (let i = 0; i < enemyCount; i++) {
-                    setTimeout(() => {
-                        let type = undefined;
-                        if (this.gameState.wave >= 2 && Math.random() < 0.2) type = 'fast';
-                        if (this.gameState.wave >= 3 && Math.random() < 0.15) type = 'tank';
-                        if (this.gameState.wave >= 4 && Math.random() < 0.1) type = 'sniper';
-                        if (this.gameState.wave >= 5 && Math.random() < 0.1) type = 'bomber';
-                        this.gameState.enemies.push(this.createEnemy(type));
-                    }, i * 500);
+                    // 일반 웨이브: 일반 몹만 등장
+                    let enemyCount;
+                    if (this.gameState.wave === 1) {
+                        enemyCount = 3;
+                    } else if (this.gameState.wave === 2) {
+                        enemyCount = 4;
+                    } else if (this.gameState.wave === 3) {
+                        enemyCount = 5;
+                    } else if (this.gameState.wave <= 10) {
+                        enemyCount = Math.min(7, 5 + (this.gameState.wave - 3));
+                    } else if (this.gameState.wave <= 15) {
+                        enemyCount = Math.min(10, 7 + (this.gameState.wave - 10));
+                    } else {
+                        enemyCount = Math.min(12, 10 + (this.gameState.wave - 15));
+                    }
+                    for (let i = 0; i < enemyCount; i++) {
+                        setTimeout(() => {
+                            let type = undefined;
+                            if (this.gameState.wave >= 2 && Math.random() < 0.2) type = 'fast';
+                            if (this.gameState.wave >= 3 && Math.random() < 0.15) type = 'tank';
+                            if (this.gameState.wave >= 4 && Math.random() < 0.1) type = 'sniper';
+                            if (this.gameState.wave >= 5 && Math.random() < 0.1) type = 'bomber';
+                            this.gameState.enemies.push(this.createEnemy(type));
+                        }, i * 500);
+                    }
                 }
                 
                 // 아이템 생성 (전체적으로 감소, 탄약은 유지/증가)
@@ -2669,15 +2670,30 @@
             
             // 웨이브 완료 체크
             checkWaveComplete = () => {
-                if (this.gameState.enemies.length === 0 && this.gameState.gameStatus === 'playing') {
-                    this.gameState.gameStatus = 'wave-complete';
-                    this.showMessage(`웨이브 ${this.gameState.wave} 완료!`, '다음 웨이브 준비 중...', 3000);
-                    this.gameState.wave++;
-                    setTimeout(() => {
-                        this.gameState.gameStatus = 'spawning';
-                        this.spawnInitialWave();
-                        this.gameState.gameStatus = 'playing';
-                    }, 3000);
+                // 보스 웨이브: 보스가 죽었을 때만 다음 웨이브
+                if (this.gameState.wave % 10 === 0) {
+                    if (!this.bossActive && this.gameState.enemies.length === 0 && this.gameState.gameStatus === 'playing') {
+                        this.gameState.gameStatus = 'wave-complete';
+                        this.showMessage(`웨이브 ${this.gameState.wave} 완료!`, '다음 웨이브 준비 중...', 3000);
+                        this.gameState.wave++;
+                        setTimeout(() => {
+                            this.gameState.gameStatus = 'spawning';
+                            this.spawnInitialWave();
+                            this.gameState.gameStatus = 'playing';
+                        }, 3000);
+                    }
+                } else {
+                    // 일반 웨이브: 적이 모두 죽었을 때
+                    if (this.gameState.enemies.length === 0 && this.gameState.gameStatus === 'playing') {
+                        this.gameState.gameStatus = 'wave-complete';
+                        this.showMessage(`웨이브 ${this.gameState.wave} 완료!`, '다음 웨이브 준비 중...', 3000);
+                        this.gameState.wave++;
+                        setTimeout(() => {
+                            this.gameState.gameStatus = 'spawning';
+                            this.spawnInitialWave();
+                            this.gameState.gameStatus = 'playing';
+                        }, 3000);
+                    }
                 }
             }
             
