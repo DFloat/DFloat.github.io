@@ -609,6 +609,11 @@
                         dashCooldown: 0, // 마지막 대시 시각
                         dashEndTime: 0, // 대시 종료 시각
                         isDashing: false, // 대시 중 여부
+                        reloadTime: 1500, // 기본 재장전 시간(ms)
+                        isReloading: false,
+                        machineGunMode: false, // 기관단총 패시브
+                        machineGunPenalty: false, // 기관단총 패널티
+                        reloadPenalty: 0, // 패시브로 인한 추가 재장전 시간(ms)
                     },
                     enemies: [], // 적 배열
                     projectiles: [], // 발사체 배열
@@ -1036,6 +1041,11 @@
                         dashCooldown: 0, // 마지막 대시 시각
                         dashEndTime: 0, // 대시 종료 시각
                         isDashing: false, // 대시 중 여부
+                        reloadTime: 1500, // 기본 재장전 시간(ms)
+                        isReloading: false,
+                        machineGunMode: false, // 기관단총 패시브
+                        machineGunPenalty: false, // 기관단총 패널티
+                        reloadPenalty: 0, // 패시브로 인한 추가 재장전 시간(ms)
                     },
                     enemies: [],
                     projectiles: [],
@@ -1310,42 +1320,36 @@
             
             // 플레이어 발사 로직
             shoot = () => {
+                const player = this.gameState.player;
+                if (player.isReloading) return;
                 if (this.currentWeapon === 'gun') {
-                    const player = this.gameState.player;
-                    if (player.ammo <= 0) return; // 탄약 없으면 발사 불가
-                    
-                    const now = Date.now();
-                    // 연발 모드 체크
-                    let shootInterval = 200; // 기본 발사 간격
-                    if (player.rapidFireTime && now < player.rapidFireTime) {
-                        shootInterval = 100; // 연발 모드: 0.1초 간격
+                    if (player.ammo <= 0) {
+                        this.reload();
+                        return;
                     }
-                    // 재사용 대기시간 감소 적용
+                    const now = Date.now();
+                    let shootInterval = 200;
+                    if (player.machineGunMode) shootInterval = 60;
+                    if (player.rapidFireTime && now < player.rapidFireTime) shootInterval = 100;
                     shootInterval *= (1 - player.cooldownReduction);
-
                     if (player.lastShot && now - player.lastShot < shootInterval) return;
-                    
-                    const startX = player.x + player.width / 2; // 발사 시작 X 위치
-                    const startY = player.y + player.height / 2; // 발사 시작 Y 위치
-                    const angle = Math.atan2(this.mouse.y - startY, this.mouse.x - startX); // 마우스 방향으로 각도 계산
-                    const speed = 12; // 발사체 속도
-                    
-                    // 치명타 계산
+                    const startX = player.x + player.width / 2;
+                    const startY = player.y + player.height / 2;
+                    const angle = Math.atan2(this.mouse.y - startY, this.mouse.x - startX);
+                    let speed = player.machineGunMode ? 16 : 12;
                     let damage = player.baseDamage;
                     let isCritical = false;
                     if (Math.random() < player.critChance) {
                         damage *= player.critMultiplier;
                         isCritical = true;
                     }
-
-                    const multishot = player.multishot; // 다중 발사 횟수
-                    
-                    // 다중 발사 처리 (최대 4발로 제한)
-                    const actualMultishot = Math.min(multishot, 4); // 최대 4발로 제한
+                    if (player.machineGunMode) damage *= 0.5;
+                    if (player.machineGunPenalty) damage *= 0.5;
+                    if (player.homingLevel >= 3 && player.homingPenalty) damage *= 0.95;
+                    const multishot = player.multishot;
+                    const actualMultishot = Math.min(multishot, 4);
                     for (let i = 0; i < actualMultishot; i++) {
-                        const spreadAngle = angle + (i - (actualMultishot - 1) / 2) * 0.2; // 발사체 확산 각도
-                        
-                        // === 도탄 사격 레벨에 따라 발사체 life 증가 ===
+                        const spreadAngle = angle + (i - (actualMultishot - 1) / 2) * 0.2;
                         let baseLife = 120;
                         let ricochetBonus = player.ricochetLevel ? player.ricochetLevel * 30 : 0;
                         let projectileLife = baseLife + ricochetBonus;
@@ -1354,10 +1358,10 @@
                             x: startX, y: startY,
                             vx: Math.cos(spreadAngle) * speed,
                             vy: Math.sin(spreadAngle) * speed,
-                            radius: 3,
+                            radius: player.machineGunMode ? 2 : 3,
                             damage: damage,
-                            life: projectileLife, // 지속시간 반영
-                            color: player.rapidFireTime && now < player.rapidFireTime ? '#ff6b00' : '#fbbf24',
+                            life: projectileLife,
+                            color: player.machineGunMode ? '#aaa' : (player.rapidFireTime && now < player.rapidFireTime ? '#ff6b00' : '#fbbf24'),
                             ownerId: 'player',
                             pierceCount: player.piercingShot,
                             explosiveRadius: player.explosiveShot > 0 ? (80 + player.explosiveShot * 20) : 0,
@@ -1369,15 +1373,18 @@
                             hitEnemies: []
                         });
                     }
-                    
-                    player.ammo--; // 탄약 감소
-                    player.lastShot = now; // 마지막 발사 시간 업데이트
-                    this.updateHUD(); // HUD 업데이트
+                    // 기관단총 패널티: 4발당 탄약 1 소모
+                    if (player.machineGunMode) {
+                        player.ammo -= 0.25;
+                        if (player.ammo < 0) player.ammo = 0;
+                    } else {
+                        player.ammo--;
+                    }
+                    player.lastShot = now;
+                    this.updateHUD();
                 } else if (this.currentWeapon === 'melee') {
-                    // 근접 공격: 짧은 사거리, 큰 데미지
-                    const player = this.gameState.player;
-                    const range = 70; // 근접 사거리
-                    const damage = player.baseDamage * 4; // 큰 데미지
+                    const range = 70;
+                    const damage = player.baseDamage * 4;
                     let hit = false;
                     this.gameState.enemies.forEach(enemy => {
                         const dx = (enemy.x + enemy.width/2) - (player.x + player.width/2);
@@ -1399,6 +1406,19 @@
                 }
             }
 
+            reload = () => {
+                const player = this.gameState.player;
+                if (player.isReloading) return;
+                player.isReloading = true;
+                let reloadTime = player.reloadTime + player.reloadPenalty;
+                this.showMessage('재장전 중...', '', reloadTime);
+                setTimeout(() => {
+                    player.ammo = 100; // 탄약 무제한 시스템: 100으로 리필(실제 제한 없음)
+                    player.isReloading = false;
+                    this.updateHUD();
+                }, reloadTime);
+            }
+            
             // 수류탄 투척 로직
             throwGrenade = () => {
                 const player = this.gameState.player;
@@ -2752,6 +2772,11 @@
                         dashCooldown: 0, // 마지막 대시 시각
                         dashEndTime: 0, // 대시 종료 시각
                         isDashing: false, // 대시 중 여부
+                        reloadTime: 1500, // 기본 재장전 시간(ms)
+                        isReloading: false,
+                        machineGunMode: false, // 기관단총 패시브
+                        machineGunPenalty: false, // 기관단총 패널티
+                        reloadPenalty: 0, // 패시브로 인한 추가 재장전 시간(ms)
                     },
                     enemies: [],
                     projectiles: [],
@@ -2844,9 +2869,74 @@
             applyReward = (type, value) => {
                 const player = this.gameState.player;
                 switch (type) {
+                    case 'tank':
+                        player.maxHealth += 100;
+                        player.health = Math.min(player.maxHealth, player.health + 100);
+                        player.speed -= 4;
+                        this.showMessage('탱크가 되어!', '최대 체력 +100, 이동 속도 -4', 2000);
+                        break;
+                    case 'speedster':
+                        player.speed += 10;
+                        player.dashCooldown = Math.max(0, player.dashCooldown - 10000);
+                        player.baseDamage *= 0.95;
+                        player.reloadPenalty += 3000;
+                        this.showMessage('빨라진다아아아아!', '속도 +10, 대시 쿨타임 -10초, 공격력 -5%, 재장전 +3초', 2000);
+                        break;
+                    case 'machine_gun':
+                        player.machineGunMode = true;
+                        player.machineGunPenalty = true;
+                        player.reloadPenalty += 5000;
+                        this.showMessage('기관단총!', '연사, 재장전 +5초, 공격력 -50%', 2000);
+                        break;
+                    case 'homing_master':
+                        player.homingLevel = 3;
+                        player.homingPenalty = true;
+                        this.showMessage('유도탄!', '유도탄 Lv.3, 공격력 -5%', 2000);
+                        break;
+                    case 'ricochet_shot':
+                        player.ricochetLevel = 1;
+                        this.showMessage('탱탱볼!', '총알이 벽에 튕김', 2000);
+                        break;
+                    case 'vampire':
+                        player.lifeStealPercent += 0.03;
+                        player.reloadPenalty += 2000;
+                        this.showMessage('뱀파이어!', '흡혈, 재장전 +2초', 2000);
+                        break;
+                    case 'knife_shield':
+                        for (let i = 0; i < 3; i++) {
+                            player.orbitingKnives.push({
+                                angle: Math.random() * Math.PI * 2,
+                                radius: 60,
+                                speed: 0.05,
+                                damage: 15,
+                                lastHit: 0,
+                                cooldown: 200,
+                                color: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').color,
+                                emoji: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').emoji
+                            });
+                        }
+                        this.showMessage('칼날이 나를 감싸네!', '칼날 3개 생성', 2000);
+                        break;
+                    case 'crit_master':
+                        player.critChance += 0.2;
+                        player.maxHealth = Math.floor(player.maxHealth * 0.9);
+                        player.health = Math.min(player.maxHealth, player.health);
+                        this.showMessage('스치기만 해도 치명타!', '치명타 +20%, 체력 -10%', 2000);
+                        break;
+                    case 'armor':
+                        player.armor += 5;
+                        this.showMessage('방어력!', '피해량 5 감소', 2000);
+                        break;
+                    case 'ammo_overflow':
+                        player.ammoRegenEndTime = Date.now() + 10000;
+                        player.ammoRegenAmount = 10;
+                        player.maxAmmo += 20;
+                        this.showMessage('탄약이 넘쳐!', '탄약 자동 회복, 탄약통 +20', 2000);
+                        break;
+                    // 기존 단순 보상도 지원
                     case 'maxHealth':
                         player.maxHealth += value;
-                        player.health = Math.min(player.maxHealth, player.health + value); // 최대 체력 증가 시 현재 체력도 증가
+                        player.health = Math.min(player.maxHealth, player.health + value);
                         this.showMessage(`최대 체력 +${value}!`, '', 1500);
                         break;
                     case 'currentHealth':
@@ -2868,14 +2958,14 @@
                         break;
                     case 'orbiting_knife':
                         player.orbitingKnives.push({
-                            angle: Math.random() * Math.PI * 2, // 초기 무작위 각도
-                            radius: 60, // 플레이어로부터의 거리
-                            speed: 0.05, // 각속도
-                            damage: 15, // 칼날 공격력
-                            lastHit: 0, // 마지막 공격 시간 (쿨다운용)
-                            cooldown: 200, // 공격 쿨다운 (ms)
-                            color: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').color, // 아이템 타입에서 색상 가져오기
-                            emoji: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').emoji // 아이템 타입에서 이모지 가져오기
+                            angle: Math.random() * Math.PI * 2,
+                            radius: 60,
+                            speed: 0.05,
+                            damage: 15,
+                            lastHit: 0,
+                            cooldown: 200,
+                            color: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').color,
+                            emoji: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').emoji
                         });
                         this.showMessage(`회전 칼날 획득!`, `플레이어 주위를 돕니다!`, 2000);
                         break;
@@ -2916,18 +3006,18 @@
                         this.showMessage(`방어력!`, `피해량 ${value} 감소!`, 2000);
                         break;
                     case 'time_stop':
-                        this.gameState.timeStopEndTime = now + value;
+                        this.gameState.timeStopEndTime = Date.now() + value;
                         this.gameState.timeSlowEffect = 0;
                         this.showMessage(`시간 정지!`, `${value / 1000}초간 모든 적 정지!`, 2000);
                         break;
                     case 'ammo_regen':
-                        player.ammoRegenEndTime = now + item.duration;
-                        player.lastAmmoRegenTick = now;
+                        player.ammoRegenEndTime = Date.now() + 5000;
+                        player.lastAmmoRegenTick = Date.now();
                         player.ammoRegenAmount = value;
-                        this.showMessage(`탄약 재생!`, `${item.duration / 1000}초간 탄약 자동 회복!`, 2000);
+                        this.showMessage(`탄약 재생!`, `5초간 탄약 자동 회복!`, 2000);
                         break;
                 }
-                this.updateHUD(); // HUD 업데이트
+                this.updateHUD();
             }
             
             // HUD 업데이트 (체력, 탄약, 점수, 웨이브, 미니맵)
