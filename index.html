@@ -46,6 +46,8 @@
             border-radius: 16px;
             padding: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            color: #fff;
+            font-weight: bold;
         }
         
         /* HUD (Head-Up Display) 스타일: 왼쪽 상단 고정, flexbox로 내부 요소 정렬 */
@@ -297,13 +299,13 @@
             border-radius: 12px;
             padding: 20px 25px;
             font-size: 1.2em;
-            font-weight: 500;
-            color: white;
+            font-weight: bold;
+            color: #fff;
             cursor: pointer;
             transition: all 0.3s ease;
             backdrop-filter: blur(8px);
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-            min-width: 180px; /* 버튼 최소 너비 */
+            min-width: 180px;
         }
 
         .reward-button:hover {
@@ -316,6 +318,93 @@
             transform: translateY(0);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
+
+        #shopPopup h2, #shopList {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        #shopButton {
+            background: #ffe066;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        /* --- 2. 상점 UI/로직: 점수로 패시브 업그레이드 구매 --- */
+        /* 1) 상점에 표시할 아이템 목록 및 가격 설정 (보상 목록과 동일, 가격은 예시) */
+        .SHOP_ITEMS = [
+            { text: '+100 최대 체력', type: 'maxHealth', value: 100, price: 1000 },
+            { text: '+50 현재 체력', type: 'currentHealth', value: 50, price: 700 },
+            { text: '+5 공격력', type: 'damage', value: 5, price: 1200 },
+            { text: '+1 이동 속도', type: 'speed', value: 1, price: 900 },
+            { text: '+1 다중 발사', type: 'multishot', value: 1, price: 1500 },
+            { text: '회전 칼날', type: 'orbiting_knife', value: 1, price: 2000 },
+            { text: '관통 사격', type: 'piercing_shot', value: 1, price: 1800 },
+            { text: '폭발 사격', type: 'explosive_shot', value: 1, price: 1800 },
+            { text: '도탄 사격', type: 'ricochet_shot', value: 1, price: 1800 },
+            { text: '유도 사격', type: 'homing_shot', value: 1, price: 1800 },
+            { text: '분열 사격', type: 'split_shot', value: 1, price: 1800 },
+            { text: '생명력 흡수', type: 'life_steal', value: 0.02, price: 1200 },
+            { text: '치명타 확률', type: 'crit_chance', value: 0.05, price: 1200 },
+            { text: '재사용 대기시간 감소', type: 'cooldown_reduction', value: 0.05, price: 1200 },
+            { text: '방어력', type: 'armor', value: 5, price: 1000 },
+            { text: '시간 정지', type: 'time_stop', value: 3000, price: 2500 },
+            { text: '탄약 재생', type: 'ammo_regen', value: 10, price: 1000 }
+        ];
+
+        /* 2) 상점 UI에 아이템 표시 및 구매 로직 구현 */
+        this.updateShopList = () => {
+            const shopList = document.getElementById('shopList');
+            shopList.innerHTML = '';
+            this.SHOP_ITEMS.forEach(item => {
+                const owned = false; // 중복 구매 제한하려면 true로 변경
+                const affordable = this.gameState.score >= item.price;
+                const itemDiv = document.createElement('div');
+                itemDiv.style.display = 'flex';
+                itemDiv.style.justifyContent = 'space-between';
+                itemDiv.style.alignItems = 'center';
+                itemDiv.style.margin = '10px 0';
+                itemDiv.style.padding = '10px 0';
+                itemDiv.style.borderBottom = '1px solid rgba(255,255,255,0.15)';
+                itemDiv.style.color = '#fff';
+                itemDiv.style.fontWeight = 'bold';
+                const label = document.createElement('span');
+                label.textContent = `${item.text}`;
+                const price = document.createElement('span');
+                price.textContent = `${item.price}점`;
+                price.style.marginLeft = '16px';
+                price.style.color = affordable ? '#ffe066' : '#aaa';
+                const buyBtn = document.createElement('button');
+                buyBtn.textContent = affordable ? '구매' : '구매불가';
+                buyBtn.disabled = !affordable;
+                buyBtn.style.marginLeft = '18px';
+                buyBtn.style.background = affordable ? '#ffe066' : '#888';
+                buyBtn.style.color = '#222';
+                buyBtn.style.fontWeight = 'bold';
+                buyBtn.style.border = 'none';
+                buyBtn.style.borderRadius = '8px';
+                buyBtn.style.padding = '6px 18px';
+                buyBtn.style.cursor = affordable ? 'pointer' : 'not-allowed';
+                buyBtn.onclick = () => {
+                    if (this.gameState.score >= item.price) {
+                        this.gameState.score -= item.price;
+                        this.applyReward(item.type, item.value);
+                        this.updateHUD();
+                        this.updateShopList();
+                    }
+                };
+                itemDiv.appendChild(label);
+                itemDiv.appendChild(price);
+                itemDiv.appendChild(buyBtn);
+                shopList.appendChild(itemDiv);
+            });
+        };
+
+        /* 3) 상점 버튼 클릭 시 updateShopList 호출 */
+        document.getElementById('shopButton').onclick = () => {
+            document.getElementById('shopPopup').style.display = 'block';
+            this.updateShopList();
+        };
     </style>
 </head>
 <body>
@@ -407,7 +496,7 @@
 
     <!-- 보상 선택 화면 -->
     <div id="rewardSelectionScreen" class="glass-card">
-        <h2>보스 처치! 보상을 선택하세요.</h2>
+        <h2 id="rewardSelectionTitle">보상 선택</h2>
         <div class="reward-options" id="rewardOptions">
             <!-- 보상 버튼들이 여기에 동적으로 추가됩니다. -->
         </div>
@@ -2703,18 +2792,20 @@
             }
 
             // 보상 선택 화면 표시
-            showRewardSelection = () => {
-                this.canvas.style.filter = 'blur(10px)'; // 캔버스 블러 처리
-                document.querySelector('.hud').style.display = 'none'; // HUD 숨김
-                document.getElementById('rewardSelectionScreen').style.display = 'flex'; // 보상 화면 표시
-
+            showRewardSelection = (type = 'score') => {
+                this.canvas.style.filter = 'blur(10px)';
+                document.querySelector('.hud').style.display = 'none';
+                document.getElementById('rewardSelectionScreen').style.display = 'flex';
+                const titleEl = document.getElementById('rewardSelectionTitle');
+                if (type === 'boss') {
+                    titleEl.textContent = '보스 처치! 보상을 선택하세요.';
+                } else {
+                    titleEl.textContent = '점수 달성! 보상을 선택하세요.';
+                }
                 const rewardOptionsEl = document.getElementById('rewardOptions');
-                rewardOptionsEl.innerHTML = ''; // 기존 버튼 초기화
-
-                // 보상 옵션 무작위로 3개 선택 (중복 없이)
+                rewardOptionsEl.innerHTML = '';
                 const shuffledRewards = [...this.REWARD_OPTIONS].sort(() => 0.5 - Math.random());
                 const selectedRewards = shuffledRewards.slice(0, 3);
-
                 selectedRewards.forEach(option => {
                     const button = document.createElement('button');
                     button.className = 'reward-button';
@@ -2722,12 +2813,12 @@
                     button.addEventListener('click', () => {
                         this.applyReward(option.type, option.value);
                         this.hideRewardSelection();
-                        this.gameState.gameStatus = 'playing'; // 게임 재개
-                        this.updateHUD(); // HUD 업데이트
+                        this.gameState.gameStatus = 'playing';
+                        this.updateHUD();
                     });
                     rewardOptionsEl.appendChild(button);
                 });
-            }
+            };
 
             // 보상 선택 화면 숨기기
             hideRewardSelection = () => {
@@ -3366,7 +3457,53 @@
 
             pauseGameForReward = () => {
                 this.gameState.gameStatus = 'reward-selection';
-                this.showRewardSelection();
+                this.showRewardSelection('score');
+            };
+
+            updateShopList = () => {
+                const shopList = document.getElementById('shopList');
+                shopList.innerHTML = '';
+                this.SHOP_ITEMS.forEach(item => {
+                    const affordable = this.gameState.score >= item.price;
+                    const itemDiv = document.createElement('div');
+                    itemDiv.style.display = 'flex';
+                    itemDiv.style.justifyContent = 'space-between';
+                    itemDiv.style.alignItems = 'center';
+                    itemDiv.style.margin = '10px 0';
+                    itemDiv.style.padding = '10px 0';
+                    itemDiv.style.borderBottom = '1px solid rgba(255,255,255,0.15)';
+                    itemDiv.style.color = '#fff';
+                    itemDiv.style.fontWeight = 'bold';
+                    const label = document.createElement('span');
+                    label.textContent = `${item.text}`;
+                    const price = document.createElement('span');
+                    price.textContent = `${item.price}점`;
+                    price.style.marginLeft = '16px';
+                    price.style.color = affordable ? '#ffe066' : '#aaa';
+                    const buyBtn = document.createElement('button');
+                    buyBtn.textContent = affordable ? '구매' : '구매불가';
+                    buyBtn.disabled = !affordable;
+                    buyBtn.style.marginLeft = '18px';
+                    buyBtn.style.background = affordable ? '#ffe066' : '#888';
+                    buyBtn.style.color = '#222';
+                    buyBtn.style.fontWeight = 'bold';
+                    buyBtn.style.border = 'none';
+                    buyBtn.style.borderRadius = '8px';
+                    buyBtn.style.padding = '6px 18px';
+                    buyBtn.style.cursor = affordable ? 'pointer' : 'not-allowed';
+                    buyBtn.onclick = () => {
+                        if (this.gameState.score >= item.price) {
+                            this.gameState.score -= item.price;
+                            this.applyReward(item.type, item.value);
+                            this.updateHUD();
+                            this.updateShopList();
+                        }
+                    };
+                    itemDiv.appendChild(label);
+                    itemDiv.appendChild(price);
+                    itemDiv.appendChild(buyBtn);
+                    shopList.appendChild(itemDiv);
+                });
             };
         }
 
@@ -3390,7 +3527,7 @@
           // 상점 열기/닫기 이벤트 리스너
           document.getElementById('shopButton').onclick = function() {
             document.getElementById('shopPopup').style.display = 'block';
-            // window.game.updateShopList && window.game.updateShopList(); // 필요시
+            window.game.updateShopList();
           };
           document.getElementById('closeShopButton').onclick = function() {
             document.getElementById('shopPopup').style.display = 'none';
