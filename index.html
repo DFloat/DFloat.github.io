@@ -2562,7 +2562,28 @@
                     rageThreshold: enemyData.rageThreshold || 0, // 광전사
                     rageSpeedBoost: enemyData.rageSpeedBoost || 1,
                     rageDamageBoost: enemyData.rageDamageBoost || 1,
-                    isRaging: false // 광전사 상태
+                    isRaging: false, // 광전사 상태
+                    // 새로운 적 10종 스킬 쿨다운 초기화
+                    lastTimeReverse: 0, // 타임키퍼
+                    lastTimeAccel: 0, // 타임키퍼
+                    lastGravity: 0, // 그래비티
+                    lastAntiGravity: 0, // 그래비티
+                    lastEcho: 0, // 에코
+                    lastSonicWave: 0, // 에코
+                    lastVortex: 0, // 보르텍스
+                    lastWhirlwind: 0, // 보르텍스
+                    lastPrism: 0, // 프리즘
+                    lastLaser: 0, // 프리즘
+                    lastQuantum: 0, // 퀀텀
+                    lastQuantumSplit: 0, // 퀀텀
+                    lastCrystal: 0, // 크리스탈
+                    lastCrystalShard: 0, // 크리스탈
+                    lastShadow: 0, // 섀도우
+                    lastShadowHide: 0, // 섀도우
+                    lastPlasma: 0, // 플라즈마
+                    lastPlasmaExplosion: 0, // 플라즈마
+                    lastNebula: 0, // 네뷸라
+                    lastStarExplosion: 0 // 네뷸라
                 };
             }
 
@@ -3334,8 +3355,9 @@
                         character.vx += (dx > 0 ? 1 : -1) * 0.3 * this.gameState.timeSlowEffect;
                         character.facing = Math.atan2(dy, dx);
                     }
-                    // 기본 발사 (플레이어 향해)
-                    if (distance < 700 && now - character.lastShot > character.shootInterval * this.gameState.timeSlowEffect) {
+                    // 기본 발사 (플레이어 향해) - 새로운 적 10종은 제외
+                    const newEnemyTypes = ['timekeeper', 'gravity', 'echo', 'vortex', 'prism', 'quantum', 'crystal', 'shadow', 'plasma', 'nebula'];
+                    if (!newEnemyTypes.includes(character.type) && distance < 700 && now - character.lastShot > character.shootInterval * this.gameState.timeSlowEffect) {
                         const angle = Math.atan2(dy, dx);
                         this.gameState.projectiles.push({
                             id: Date.now() + Math.random(),
@@ -3686,8 +3708,8 @@
                 
                 // 타임키퍼: 스킬1 - 시간 역행, 스킬2 - 시간 가속
                 if (character.type === 'timekeeper') {
-                    // 스킬1: 시간 역행 (12초 쿨)
-                    if (now - character.lastTimeReverse > (character.timeReverseCooldown || 12000)) {
+                    // 스킬1: 시간 역행 (6초 쿨)
+                    if (now - character.lastTimeReverse > 6000) {
                         this.gameState.timeSlowEffect = 0.3; // 시간을 느리게
                         this.createFloatingText(character.x + character.width/2, character.y-20, '시간 역행!', '#ff6b9d');
                         setTimeout(() => {
