@@ -405,6 +405,7 @@
                 <!-- 1. HUD에 XP와 상점 버튼 추가 -->
                 <span id="xpText" style="margin-left:18px; color:#ffe066; font-size:1.1em; font-weight:600;"></span>
                 <button id="shopButton" style="margin-left:12px; font-size:1em; border-radius:6px; border:none; background:#ffe066; color:#222; padding:4px 16px; cursor:pointer;">상점</button>
+                <button id="testZoneHUDButton" style="margin-left:12px; font-size:1em; border-radius:6px; border:none; background:#ff6b6b; color:#fff; padding:4px 16px; cursor:pointer; display:none;">테스트 존</button>
             </div>
         </div>
     </div>
@@ -1061,9 +1062,8 @@
                 // 게임 모드 설정 (테스팅 존)
                 this.gameMode = 'testzone';
                 
-                // 테스팅 존 UI 표시
-                document.getElementById('testZonePopup').style.display = 'block';
-                this.updateTestZone();
+                // 테스팅 존 UI 버튼을 HUD에 추가
+                this.addTestZoneButtonToHUD();
                 
                 this.gameLoop(); // 게임 루프 시작
                 this.updateHUD(); // HUD 초기 업데이트
@@ -3431,12 +3431,14 @@
                 // 5. updateHUD에 XP/점수 표시 추가 (테스팅 존에서는 점수만)
                 if (this.gameMode === 'testzone') {
                     document.getElementById('xpText').textContent = `점수: ${this.gameState.score}`;
-                    // 테스팅 존에서는 상점 버튼 숨기기
+                    // 테스팅 존에서는 상점 버튼 숨기기, 테스트 존 버튼 보이기
                     document.getElementById('shopButton').style.display = 'none';
+                    document.getElementById('testZoneHUDButton').style.display = 'inline-block';
                 } else {
                     document.getElementById('xpText').textContent = `XP: ${this.xp}`;
-                    // 솔로 플레이에서는 상점 버튼 보이기
+                    // 솔로 플레이에서는 상점 버튼 보이기, 테스트 존 버튼 숨기기
                     document.getElementById('shopButton').style.display = 'inline-block';
+                    document.getElementById('testZoneHUDButton').style.display = 'none';
                 }
             }
             
@@ -3546,9 +3548,9 @@
                     const recoilOffset = character.gunRecoil || 0;
                     
                     // 총 이모지를 플레이어의 왼쪽 (캐릭터 중심 기준 왼쪽)에 고정 + 반동
-                    const gunOffsetX = -character.width / 2 - 10; // 캐릭터 왼쪽 끝에서 10px 더 왼쪽
+                    const gunOffsetX = -character.width / 2 - 10 - recoilOffset; // 반동으로 뒤로 밀림
                     const weaponEmoji = (this.currentWeapon === 'melee') ? '🔪' : '🔫';
-                    this.ctx.fillText(weaponEmoji, gunOffsetX, recoilOffset); // 반동 오프셋 적용
+                    this.ctx.fillText(weaponEmoji, gunOffsetX, 0); // 반동 오프셋 적용
 
                 } else {
                     // 비-플레이어 캐릭터 (적, 아군) 그리기 (변환 없음)
@@ -3950,6 +3952,7 @@
                 this.canvas.style.filter = 'blur(10px)';
                 document.querySelector('.hud').style.display = 'none';
                 document.getElementById('testZonePopup').style.display = 'none';
+                document.getElementById('testZoneHUDButton').style.display = 'none';
                 document.getElementById('introScreen').style.display = 'flex';
                 this.gameState.gameStatus = 'start';
             }
@@ -4103,6 +4106,23 @@
                     abilityList.appendChild(abilityDiv);
                 });
             };
+
+            // 테스트 존 HUD 버튼 추가
+            addTestZoneButtonToHUD = () => {
+                const testZoneHUDButton = document.getElementById('testZoneHUDButton');
+                testZoneHUDButton.style.display = 'inline-block';
+                
+                // 테스트 존 버튼 클릭 이벤트
+                testZoneHUDButton.onclick = () => {
+                    const testZonePopup = document.getElementById('testZonePopup');
+                    if (testZonePopup.style.display === 'block') {
+                        testZonePopup.style.display = 'none';
+                    } else {
+                        testZonePopup.style.display = 'block';
+                        this.updateTestZone();
+                    }
+                };
+            };
         }
 
         // === Add after GlassCombatArena class definition or at the end of the script ===
@@ -4137,16 +4157,6 @@
             } else {
               shopPopup.style.display = 'block';
               window.game.updateShopList();
-            }
-          };
-          // 테스트 존 토글 이벤트 리스너
-          document.getElementById('testZoneButton').onclick = function() {
-            const testZonePopup = document.getElementById('testZonePopup');
-            if (testZonePopup.style.display === 'block') {
-              testZonePopup.style.display = 'none';
-            } else {
-              testZonePopup.style.display = 'block';
-              window.game.updateTestZone();
             }
           };
           document.getElementById('returnToMenuButton').onclick = function() {
