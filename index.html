@@ -3071,19 +3071,7 @@
                 // 미니맵 업데이트
                 this.updateMinimap();
 
-                // 새로운 보스 시스템: 보스 체력바 표시
-                const bossBarContainer = document.getElementById('bossBarContainer');
-                const bossBar = document.getElementById('bossBar');
-                const bossName = document.getElementById('bossName');
-                
-                if (this.bossSystem.isActive && this.bossSystem.currentBoss) {
-                    const boss = this.bossSystem.currentBoss;
-                    bossBarContainer.style.display = 'block';
-                    bossName.textContent = this.ENEMY_TYPES[boss.type].name;
-                    bossBar.style.width = Math.max(0, (boss.health / boss.maxHealth) * 100) + '%';
-                } else {
-                    bossBarContainer.style.display = 'none';
-                }
+
                 // 5. updateHUD에 XP 표시 추가
                 document.getElementById('xpText').textContent = `XP: ${this.xp}`;
             }
