@@ -893,10 +893,13 @@
                     { text: '탄약 자동 회복', type: 'ammo_regen', value: 1, price: 1800 }
                 ];
 
-                // 1. GlassCombatArena 클래스 생성자에 bossActive 플래그 추가
-                this.bossActive = false;
-                // 1. GlassCombatArena 클래스 생성자에 bossSpawnLock 플래그 추가
-                this.bossSpawnLock = false;
+                // 보스 시스템 초기화
+                this.bossSystem = {
+                    isActive: false,
+                    currentBoss: null,
+                    spawnLock: false,
+                    waveNumber: 0
+                };
             }
             
             // 캔버스 크기를 창 크기에 맞게 조정
@@ -1035,6 +1038,9 @@
                 // === startGame 함수 내부에 추가 ===
                 this.currentWeapon = 'gun'; // 게임 시작 시 무기 초기화
                 this.upgrades = { gun: 0, melee: 0, health: 0, speed: 0, cooldown: 0 };
+                
+                // 보스 시스템 초기화
+                this.resetBossSystem();
             }
             
             // 무작위 표정 반환
@@ -1417,89 +1423,122 @@
                 player.lastGrenade = now;
             }
             
-            // 초기 웨이브 적 생성 및 아이템 드롭
+            // 새로운 웨이브 시스템
             spawnInitialWave = () => {
                 if (this.gameState.gameStatus !== 'spawning') return;
+                
+                // 보스 웨이브 체크 (10의 배수)
                 if (this.gameState.wave % 10 === 0) {
-                    if (this.bossSpawnLock) return;
-                    this.bossSpawnLock = true;
-                    this.bossActive = true;
-                    const bossTypes = [
-                        'boss_alpha','boss_beta','boss_gamma','boss_delta','boss_epsilon','boss_zeta','boss_eta','boss_theta'
-                    ];
-                    const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
-                    const bossData = this.ENEMY_TYPES[bossType];
-                    this.showMessage(`${bossData.name} 등장!`, '강력한 보스가 나타났습니다!', 2000);
-                    this.gameState.enemies.push(this.createEnemy(bossType));
+                    this.spawnBossWave();
                 } else {
-                    // 일반 웨이브: 일반 몹만 등장
-                    let enemyCount;
-                    if (this.gameState.wave === 1) {
-                        enemyCount = 3;
-                    } else if (this.gameState.wave === 2) {
-                        enemyCount = 4;
-                    } else if (this.gameState.wave === 3) {
-                        enemyCount = 5;
-                    } else if (this.gameState.wave <= 10) {
-                        enemyCount = Math.min(7, 5 + (this.gameState.wave - 3));
-                    } else if (this.gameState.wave <= 15) {
-                        enemyCount = Math.min(10, 7 + (this.gameState.wave - 10));
-                    } else {
-                        enemyCount = Math.min(12, 10 + (this.gameState.wave - 15));
-                    }
-                    for (let i = 0; i < enemyCount; i++) {
-                        setTimeout(() => {
-                            let type = undefined;
-                            if (this.gameState.wave >= 2 && Math.random() < 0.2) type = 'fast';
-                            if (this.gameState.wave >= 3 && Math.random() < 0.15) type = 'tank';
-                            if (this.gameState.wave >= 4 && Math.random() < 0.1) type = 'sniper';
-                            if (this.gameState.wave >= 5 && Math.random() < 0.1) type = 'bomber';
-                            this.gameState.enemies.push(this.createEnemy(type));
-                        }, i * 500);
-                    }
+                    this.spawnNormalWave();
                 }
                 
-                // 아이템 생성 (전체적으로 감소, 탄약은 유지/증가)
-                const totalItemCount = Math.min(6, Math.floor(this.gameState.wave / 2) + 3); // 최대 6개, 더 많이
+                // 아이템 생성
+                this.spawnItems();
+            }
+            
+            // 보스 웨이브 생성
+            spawnBossWave = () => {
+                // 이미 보스가 활성화되어 있으면 스킵
+                if (this.bossSystem.isActive || this.bossSystem.spawnLock) {
+                    return;
+                }
+                
+                // 보스 스폰 락 설정
+                this.bossSystem.spawnLock = true;
+                this.bossSystem.isActive = true;
+                this.bossSystem.waveNumber = this.gameState.wave;
+                
+                // 보스 타입 선택
+                const bossTypes = ['boss_alpha', 'boss_beta', 'boss_gamma', 'boss_delta', 'boss_epsilon', 'boss_zeta', 'boss_eta', 'boss_theta'];
+                const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
+                
+                // 보스 생성
+                const boss = this.createEnemy(bossType);
+                this.bossSystem.currentBoss = boss;
+                this.gameState.enemies.push(boss);
+                
+                // 보스 등장 메시지
+                const bossData = this.ENEMY_TYPES[bossType];
+                this.showMessage(`${bossData.name} 등장!`, '강력한 보스가 나타났습니다!', 2000);
+                
+                console.log(`보스 웨이브 ${this.gameState.wave} 시작: ${bossData.name}`);
+            }
+            
+            // 일반 웨이브 생성
+            spawnNormalWave = () => {
+                // 적 수 결정
+                let enemyCount;
+                if (this.gameState.wave === 1) {
+                    enemyCount = 3;
+                } else if (this.gameState.wave === 2) {
+                    enemyCount = 4;
+                } else if (this.gameState.wave === 3) {
+                    enemyCount = 5;
+                } else if (this.gameState.wave <= 10) {
+                    enemyCount = Math.min(7, 5 + (this.gameState.wave - 3));
+                } else if (this.gameState.wave <= 15) {
+                    enemyCount = Math.min(10, 7 + (this.gameState.wave - 10));
+                } else {
+                    enemyCount = Math.min(12, 10 + (this.gameState.wave - 15));
+                }
+                
+                // 적 생성
+                for (let i = 0; i < enemyCount; i++) {
+                    setTimeout(() => {
+                        let type = undefined;
+                        if (this.gameState.wave >= 2 && Math.random() < 0.2) type = 'fast';
+                        if (this.gameState.wave >= 3 && Math.random() < 0.15) type = 'tank';
+                        if (this.gameState.wave >= 4 && Math.random() < 0.1) type = 'sniper';
+                        if (this.gameState.wave >= 5 && Math.random() < 0.1) type = 'bomber';
+                        this.gameState.enemies.push(this.createEnemy(type));
+                    }, i * 500);
+                }
+                
+                console.log(`일반 웨이브 ${this.gameState.wave} 시작: ${enemyCount}마리`);
+            }
+            
+            // 아이템 생성
+            spawnItems = () => {
+                const totalItemCount = Math.min(6, Math.floor(this.gameState.wave / 2) + 3);
                 let ammoItemCount = 0;
-                if (this.gameState.wave >= 3) { // 웨이브 3부터는 탄약 1개 보장
+                if (this.gameState.wave >= 3) {
                     ammoItemCount = 1;
                 }
                 
                 for (let i = 0; i < totalItemCount; i++) {
                     setTimeout(() => {
                         let itemToCreate;
-                        // 아군 소환 아이템 드롭 확률 (예: 12%)
                         if (Math.random() < 0.12) { 
                             itemToCreate = this.ITEM_TYPES.find(item => item.type === 'ally_summon');
-                        } else if (ammoItemCount > 0 && Math.random() < 0.5) { // 탄약 드롭 확률 50%로 상향
+                        } else if (ammoItemCount > 0 && Math.random() < 0.5) {
                             itemToCreate = this.ITEM_TYPES.find(item => item.type === 'ammo');
                             ammoItemCount--;
-                        } else if (Math.random() < 0.3) { // 다중 발사 아이템 30% 확률로 우선 등장
+                        } else if (Math.random() < 0.3) {
                             itemToCreate = this.ITEM_TYPES.find(item => item.type === 'multishot');
-                        } else if (Math.random() < 0.2) { // 체력 아이템 20% 확률로 등장
+                        } else if (Math.random() < 0.2) {
                             itemToCreate = this.ITEM_TYPES.find(item => item.type === 'health');
                         } else {
-                            // 탄약/다중발사/아군소환/체력 아니면 무작위 아이템
                             const nonSpecialItems = this.ITEM_TYPES.filter(item => item.type !== 'ammo' && item.type !== 'ally_summon' && item.type !== 'multishot' && item.type !== 'health');
                             itemToCreate = nonSpecialItems[Math.floor(Math.random() * nonSpecialItems.length)];
                         }
-                        this.gameState.items.push(this.createItem(
+                        
+                        const item = this.createItem(
                             Math.random() * (this.canvas.width - 40) + 20,
                             Math.random() * (this.canvas.height - 200) + 50
-                        ));
-                        // 생성된 아이템의 타입을 itemToCreate로 덮어쓰기
-                        this.gameState.items[this.gameState.items.length - 1].type = itemToCreate.type;
-                        this.gameState.items[this.gameState.items.length - 1].effect = itemToCreate.effect;
-                        this.gameState.items[this.gameState.items.length - 1].color = itemToCreate.color;
-                        this.gameState.items[this.gameState.items.length - 1].emoji = itemToCreate.emoji;
-                        this.gameState.items[this.gameState.items.length - 1].duration = itemToCreate.duration || 0;
-                        this.gameState.items[this.gameState.items.length - 1].tickInterval = itemToCreate.tickInterval || 0;
-
+                        );
+                        
+                        item.type = itemToCreate.type;
+                        item.effect = itemToCreate.effect;
+                        item.color = itemToCreate.color;
+                        item.emoji = itemToCreate.emoji;
+                        item.duration = itemToCreate.duration || 0;
+                        item.tickInterval = itemToCreate.tickInterval || 0;
+                        
+                        this.gameState.items.push(item);
                     }, i * 3000);
                 }
-                // 보스 웨이브 끝나면 플래그 해제
-                setTimeout(() => { this._spawningWave = false; }, 2000);
             }
             
             // 캐릭터 (플레이어 및 적) 상태 업데이트 (새로운 적 AI 로직 추가)
@@ -2197,11 +2236,16 @@
                                 if (enemy.health <= 0) {
                                     this.addScore(enemy.points || 100);
                                     if (Math.random() < 0.4) this.gameState.items.push(this.createItem(enemy.x, enemy.y));
-                                    // 보스가 죽으면 bossActive 해제
+                                    
+                                    // 새로운 보스 시스템: 보스가 죽으면 시스템 리셋
                                     if (enemy.type && enemy.type.startsWith('boss')) {
-                                        this.bossActive = false;
-                                        this.bossSpawnLock = false;
+                                        // currentBoss 참조 제거
+                                        if (this.bossSystem.currentBoss && this.bossSystem.currentBoss.id === enemy.id) {
+                                            this.bossSystem.currentBoss = null;
+                                        }
+                                        this.resetBossSystem();
                                     }
+                                    
                                     this.gameState.enemies = this.gameState.enemies.filter(e => e !== enemy);
                                 }
                                 projectilesToRemove.add(i);
@@ -2371,6 +2415,16 @@
                             // 적 처치 로직 (점수, 아이템 드롭 등)
                             this.addScore(enemy.points || 100);
                             if (Math.random() < 0.4) this.gameState.items.push(this.createItem(enemy.x, enemy.y));
+                            
+                            // 새로운 보스 시스템: 보스가 죽으면 시스템 리셋
+                            if (enemy.type && enemy.type.startsWith('boss')) {
+                                // currentBoss 참조 제거
+                                if (this.bossSystem.currentBoss && this.bossSystem.currentBoss.id === enemy.id) {
+                                    this.bossSystem.currentBoss = null;
+                                }
+                                this.resetBossSystem();
+                            }
+                            
                             this.gameState.enemies = this.gameState.enemies.filter(e => e.id !== enemy.id);
                         }
                     }
@@ -2673,33 +2727,58 @@
                 });
             }
             
-            // 웨이브 완료 체크
+            // 새로운 웨이브 완료 체크 시스템
             checkWaveComplete = () => {
-                // 보스 웨이브: 보스가 죽었을 때만 다음 웨이브
+                // 보스 웨이브 완료 체크
                 if (this.gameState.wave % 10 === 0) {
-                    if (!this.bossActive && this.gameState.enemies.length === 0 && this.gameState.gameStatus === 'playing') {
-                        this.gameState.gameStatus = 'wave-complete';
-                        this.showMessage(`웨이브 ${this.gameState.wave} 완료!`, '다음 웨이브 준비 중...', 3000);
-                        this.gameState.wave++;
-                        setTimeout(() => {
-                            this.gameState.gameStatus = 'spawning';
-                            this.spawnInitialWave();
-                            this.gameState.gameStatus = 'playing';
-                        }, 3000);
-                    }
+                    this.checkBossWaveComplete();
                 } else {
-                    // 일반 웨이브: 적이 모두 죽었을 때
-                    if (this.gameState.enemies.length === 0 && this.gameState.gameStatus === 'playing') {
-                        this.gameState.gameStatus = 'wave-complete';
-                        this.showMessage(`웨이브 ${this.gameState.wave} 완료!`, '다음 웨이브 준비 중...', 3000);
-                        this.gameState.wave++;
-                        setTimeout(() => {
-                            this.gameState.gameStatus = 'spawning';
-                            this.spawnInitialWave();
-                            this.gameState.gameStatus = 'playing';
-                        }, 3000);
-                    }
+                    this.checkNormalWaveComplete();
                 }
+            }
+            
+            // 보스 웨이브 완료 체크
+            checkBossWaveComplete = () => {
+                // 보스가 죽었고, 다른 적도 없고, 게임이 진행 중일 때
+                if (!this.bossSystem.isActive && this.gameState.enemies.length === 0 && this.gameState.gameStatus === 'playing') {
+                    this.completeWave();
+                }
+            }
+            
+            // 일반 웨이브 완료 체크
+            checkNormalWaveComplete = () => {
+                // 모든 적이 죽었고, 게임이 진행 중일 때
+                if (this.gameState.enemies.length === 0 && this.gameState.gameStatus === 'playing') {
+                    this.completeWave();
+                }
+            }
+            
+            // 웨이브 완료 처리
+            completeWave = () => {
+                this.gameState.gameStatus = 'wave-complete';
+                this.showMessage(`웨이브 ${this.gameState.wave} 완료!`, '다음 웨이브 준비 중...', 3000);
+                this.gameState.wave++;
+                
+                setTimeout(() => {
+                    this.gameState.gameStatus = 'spawning';
+                    this.spawnInitialWave();
+                    this.gameState.gameStatus = 'playing';
+                }, 3000);
+            }
+            
+            // 보스 시스템 리셋
+            resetBossSystem = () => {
+                console.log('보스 시스템 리셋');
+                this.bossSystem.isActive = false;
+                this.bossSystem.currentBoss = null;
+                this.bossSystem.spawnLock = false;
+                this.bossSystem.waveNumber = 0;
+                
+                // 보스 체력바 숨기기
+                document.getElementById('bossBarContainer').style.display = 'none';
+                
+                // 보스 처치 메시지
+                this.showMessage('보스 처치!', '훌륭한 전투였습니다!', 2000);
             }
             
             // 게임 오버 처리
@@ -2798,6 +2877,9 @@
                     timeSlowEndTime: 0,
                     timeSlowEffect: 1
                 };
+                
+                // 보스 시스템 초기화
+                this.resetBossSystem();
                 
                 this.spawnInitialWave(); // 새 게임 시작 시 초기 웨이브 생성
                 this.updateHUD(); // HUD 업데이트 (초기화된 값으로)
@@ -3102,12 +3184,13 @@
                 // 미니맵 업데이트
                 this.updateMinimap();
 
-                // 보스 체력바 표시
+                // 새로운 보스 시스템: 보스 체력바 표시
                 const bossBarContainer = document.getElementById('bossBarContainer');
                 const bossBar = document.getElementById('bossBar');
                 const bossName = document.getElementById('bossName');
-                const boss = this.gameState.enemies.find(e => e.type && e.type.startsWith('boss'));
-                if (boss) {
+                
+                if (this.bossSystem.isActive && this.bossSystem.currentBoss) {
+                    const boss = this.bossSystem.currentBoss;
                     bossBarContainer.style.display = 'block';
                     bossName.textContent = this.ENEMY_TYPES[boss.type].name;
                     bossBar.style.width = Math.max(0, (boss.health / boss.maxHealth) * 100) + '%';
