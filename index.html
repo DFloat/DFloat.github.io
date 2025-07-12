@@ -1456,7 +1456,7 @@
                                 
                                 // 보스가 죽으면 시스템 리셋
                                 if (enemy.type && enemy.type.startsWith('boss')) {
-                                    if (this.bossSystem.currentBoss && this.bossSystem.currentBoss.id === enemy.id) {
+                                    if (this.bossSystem && this.bossSystem.currentBoss && this.bossSystem.currentBoss.id === enemy.id) {
                                         this.bossSystem.currentBoss = null;
                                     }
                                     this.resetBossSystem();
@@ -1533,7 +1533,7 @@
             // 보스 웨이브 생성
             spawnBossWave = () => {
                 // 이미 보스가 활성화되어 있으면 스킵
-                if (this.bossSystem.isActive || this.bossSystem.spawnLock) {
+                if (!this.bossSystem || this.bossSystem.isActive || this.bossSystem.spawnLock) {
                     return;
                 }
                 
@@ -2815,7 +2815,7 @@
             // 보스 웨이브 완료 체크
             checkBossWaveComplete = () => {
                 // 보스가 죽었고, 다른 적도 없고, 게임이 진행 중일 때
-                if (!this.bossSystem.isActive && this.gameState.enemies.length === 0 && this.gameState.gameStatus === 'playing') {
+                if (!this.bossSystem || !this.bossSystem.isActive && this.gameState.enemies.length === 0 && this.gameState.gameStatus === 'playing') {
                     this.completeWave();
                 }
             }
@@ -2844,9 +2844,11 @@
             // 보스 시스템 리셋
             resetBossSystem = () => {
                 console.log('보스 시스템 리셋');
-                this.bossSystem.isActive = false;
-                this.bossSystem.currentBoss = null;
-                this.bossSystem.spawnLock = false;
+                if (this.bossSystem) {
+                    this.bossSystem.isActive = false;
+                    this.bossSystem.currentBoss = null;
+                    this.bossSystem.spawnLock = false;
+                }
                 
                 // 보스 체력바 숨기기
                 const bossBarContainer = document.getElementById('bossBarContainer');
@@ -2955,7 +2957,12 @@
                     timeSlowEffect: 1
                 };
                 
-
+                // 보스 시스템 초기화
+                this.bossSystem = {
+                    isActive: false,
+                    currentBoss: null,
+                    spawnLock: false
+                };
                 
                 this.spawnInitialWave(); // 새 게임 시작 시 초기 웨이브 생성
                 this.updateHUD(); // HUD 업데이트 (초기화된 값으로)
@@ -3266,7 +3273,7 @@
                 const bossBar = document.getElementById('bossBar');
                 const bossName = document.getElementById('bossName');
                 
-                if (this.bossSystem.isActive && this.bossSystem.currentBoss) {
+                if (this.bossSystem && this.bossSystem.isActive && this.bossSystem.currentBoss) {
                     const boss = this.bossSystem.currentBoss;
                     bossBarContainer.style.display = 'block';
                     bossName.textContent = this.ENEMY_TYPES[boss.type].name;
