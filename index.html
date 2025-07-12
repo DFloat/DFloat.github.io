@@ -753,7 +753,7 @@
     </div>
     
     <!-- 플레이어2 HUD (멀티플레이 모드에서만 표시) -->
-    <div id="player2HUD" class="glass-card hud-item" style="display:none; position:fixed; top:24px; right:24px; z-index:20; flex-direction:row; align-items:center; gap:22px; min-width:unset; max-width:unset;">
+    <div id="player2HUD" class="glass-card hud-item" style="display:none; position:fixed; top:80px; left:24px; z-index:20; flex-direction:row; align-items:center; gap:22px; min-width:unset; max-width:unset;">
         <div style="display:flex; align-items:center; gap:10px;">
             <div style="display:flex; align-items:center; gap:6px;">
                 <div style="width:8px; height:8px; background:#ef4444; border-radius:50%; animation:pulse 2s infinite;"></div>
@@ -3677,7 +3677,7 @@
                 // 2. 플레이어 발사체 → 적 충돌
                 for (let i = 0; i < this.gameState.projectiles.length; i++) {
                     const p = this.gameState.projectiles[i];
-                    if (p.ownerId === 'player') {
+                    if (p.ownerId === 'player' || p.ownerId === 'player2') {
                         for (let j = 0; j < this.gameState.enemies.length; j++) {
                             const enemy = this.gameState.enemies[j];
                             if (!enemy) continue;
@@ -3759,8 +3759,8 @@
                 // 3. 적 발사체 → 플레이어 충돌
                 for (let i = 0; i < this.gameState.projectiles.length; i++) {
                     const p = this.gameState.projectiles[i];
-                    // Only enemy bullets (not player or ally) can hit the player
-                    if (p.ownerId && p.ownerId !== 'player' && p.ownerId !== 'ally') {
+                    // Only enemy bullets (not player, player2, ally, or any player-owned projectiles) can hit the player
+                    if (p.ownerId && p.ownerId !== 'player' && p.ownerId !== 'player2' && p.ownerId !== 'ally' && !p.ownerId.startsWith('player')) {
                         // 플레이어1 충돌 체크
                         const dx = p.x - (player.x + player.width / 2);
                         const dy = p.y - (player.y + player.height / 2);
@@ -3845,7 +3845,7 @@
                 // 4. 발사체끼리 충돌(플레이어 vs 적)
                 for (let i = 0; i < this.gameState.projectiles.length; i++) {
                     const p1 = this.gameState.projectiles[i];
-                    if (p1.ownerId === 'player') {
+                    if (p1.ownerId === 'player' || p1.ownerId === 'player2') {
                         for (let j = 0; j < this.gameState.projectiles.length; j++) {
                             if (i === j) continue;
                             const p2 = this.gameState.projectiles[j];
@@ -4702,43 +4702,85 @@
             // 선택된 보상 적용
             applyReward = (type, value) => {
                 const player = this.gameState.player;
-                switch (type) {
-                    case 'tank':
-                        player.maxHealth += 100;
-                        player.health = Math.min(player.maxHealth, player.health + 100);
-                        player.speed -= 4;
-                        this.showMessage('탱크가 되어!', '최대 체력 +100, 이동 속도 -4', 2000);
-                        break;
-                    case 'speedster':
-                        player.speed += 10;
-                        player.dashCooldown = Math.max(0, player.dashCooldown - 10000);
-                        player.baseDamage *= 0.95;
-                        player.reloadPenalty += 3000;
-                        this.showMessage('빨라진다아아아아!', '속도 +10, 대시 쿨타임 -10초, 공격력 -5%, 재장전 +3초', 2000);
-                        break;
-                    case 'machine_gun':
-                        player.machineGunMode = true;
-                        player.machineGunPenalty = true;
-                        player.reloadPenalty += 5000;
-                        this.showMessage('기관단총!', '연사, 재장전 +5초, 공격력 -50%', 2000);
-                        break;
-                    case 'homing_master':
-                        player.homingLevel = 3;
-                        player.homingPenalty = true;
-                        this.showMessage('유도탄!', '유도탄 Lv.3, 공격력 -5%', 2000);
-                        break;
-                    case 'ricochet_shot':
-                        player.ricochetLevel = 1;
-                        this.showMessage('탱탱볼!', '총알이 벽에 튕김', 2000);
-                        break;
-                    case 'vampire':
-                        player.lifeStealPercent += 0.03;
-                        player.reloadPenalty += 2000;
-                        this.showMessage('뱀파이어!', '흡혈, 재장전 +2초', 2000);
-                        break;
-                    case 'knife_shield':
-                        for (let i = 0; i < 3; i++) {
-                            player.orbitingKnives.push({
+                const player2 = this.gameState.player2;
+                
+                // 멀티플레이 모드에서 패시브 능력 공유
+                const applyToPlayer = (targetPlayer) => {
+                    if (!targetPlayer) return;
+                    
+                    switch (type) {
+                        case 'tank':
+                            targetPlayer.maxHealth += 100;
+                            targetPlayer.health = Math.min(targetPlayer.maxHealth, targetPlayer.health + 100);
+                            targetPlayer.speed -= 4;
+                            break;
+                        case 'speedster':
+                            targetPlayer.speed += 10;
+                            targetPlayer.dashCooldown = Math.max(0, targetPlayer.dashCooldown - 10000);
+                            targetPlayer.baseDamage *= 0.95;
+                            targetPlayer.reloadPenalty += 3000;
+                            break;
+                        case 'machine_gun':
+                            targetPlayer.machineGunMode = true;
+                            targetPlayer.machineGunPenalty = true;
+                            targetPlayer.reloadPenalty += 5000;
+                            break;
+                        case 'homing_master':
+                            targetPlayer.homingLevel = 3;
+                            targetPlayer.homingPenalty = true;
+                            break;
+                        case 'ricochet_shot':
+                            targetPlayer.ricochetLevel = 1;
+                            break;
+                        case 'vampire':
+                            targetPlayer.lifeStealPercent += 0.03;
+                            targetPlayer.reloadPenalty += 2000;
+                            break;
+                        case 'knife_shield':
+                            for (let i = 0; i < 3; i++) {
+                                targetPlayer.orbitingKnives.push({
+                                    angle: Math.random() * Math.PI * 2,
+                                    radius: 60,
+                                    speed: 0.05,
+                                    damage: 15,
+                                    lastHit: 0,
+                                    cooldown: 200,
+                                    color: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').color,
+                                    emoji: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').emoji
+                                });
+                            }
+                            break;
+                        case 'crit_master':
+                            targetPlayer.critChance += 0.2;
+                            targetPlayer.maxHealth = Math.floor(targetPlayer.maxHealth * 0.9);
+                            targetPlayer.health = Math.min(targetPlayer.maxHealth, targetPlayer.health);
+                            break;
+                        case 'armor':
+                            targetPlayer.armor += 5;
+                            break;
+                        case 'ammo_overflow':
+                            targetPlayer.ammoRegenEndTime = Date.now() + 10000;
+                            targetPlayer.ammoRegenAmount = 10;
+                            targetPlayer.maxAmmo += 20;
+                            break;
+                        case 'maxHealth':
+                            targetPlayer.maxHealth += value;
+                            targetPlayer.health = Math.min(targetPlayer.maxHealth, targetPlayer.health + value);
+                            break;
+                        case 'currentHealth':
+                            targetPlayer.health = Math.min(targetPlayer.maxHealth, targetPlayer.health + value);
+                            break;
+                        case 'damage':
+                            targetPlayer.baseDamage += value;
+                            break;
+                        case 'speed':
+                            targetPlayer.speed += value;
+                            break;
+                        case 'multishot':
+                            targetPlayer.multishot = Math.min(99, (targetPlayer.multishot || 1) + 1);
+                            break;
+                        case 'orbiting_knife':
+                            targetPlayer.orbitingKnives.push({
                                 angle: Math.random() * Math.PI * 2,
                                 radius: 60,
                                 speed: 0.05,
@@ -4748,96 +4790,127 @@
                                 color: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').color,
                                 emoji: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').emoji
                             });
-                        }
+                            break;
+                        case 'piercing_shot':
+                            targetPlayer.piercingShot = Math.min(99, targetPlayer.piercingShot + value);
+                            break;
+                        case 'explosive_shot':
+                            targetPlayer.explosiveShot = Math.min(99, targetPlayer.explosiveShot + value);
+                            break;
+                        case 'ricochet_shot':
+                            targetPlayer.ricochetLevel = Math.min(99, targetPlayer.ricochetLevel + value);
+                            break;
+                        case 'homing_shot':
+                            targetPlayer.homingLevel = Math.min(99, targetPlayer.homingLevel + value);
+                            break;
+                        case 'split_shot':
+                            targetPlayer.splitLevel = Math.min(99, targetPlayer.splitLevel + value);
+                            break;
+                        case 'life_steal':
+                            targetPlayer.lifeStealPercent = Math.min(0.2, targetPlayer.lifeStealPercent + value);
+                            break;
+                        case 'crit_chance':
+                            targetPlayer.critChance = Math.min(0.5, targetPlayer.critChance + value);
+                            break;
+                        case 'cooldown_reduction':
+                            targetPlayer.cooldownReduction = Math.min(0.5, targetPlayer.cooldownReduction + value);
+                            break;
+                        case 'armor':
+                            targetPlayer.armor += value;
+                            break;
+                        case 'ammo':
+                            targetPlayer.ammo = Math.min(targetPlayer.maxAmmo, targetPlayer.ammo + value);
+                            break;
+                        case 'max_ammo':
+                            targetPlayer.maxAmmo += value;
+                            targetPlayer.ammo = Math.min(targetPlayer.maxAmmo, targetPlayer.ammo + value);
+                            break;
+                    }
+                };
+                
+                // 멀티플레이 모드에서 두 플레이어 모두에게 적용
+                if (this.gameState.multiplayerMode && player2) {
+                    applyToPlayer(player);
+                    applyToPlayer(player2);
+                } else {
+                    // 솔로 모드에서는 플레이어1에게만 적용
+                    applyToPlayer(player);
+                }
+                
+                // 메시지 표시 (기존 메시지들 유지)
+                switch (type) {
+                    case 'tank':
+                        this.showMessage('탱크가 되어!', '최대 체력 +100, 이동 속도 -4', 2000);
+                        break;
+                    case 'speedster':
+                        this.showMessage('빨라진다아아아아!', '속도 +10, 대시 쿨타임 -10초, 공격력 -5%, 재장전 +3초', 2000);
+                        break;
+                    case 'machine_gun':
+                        this.showMessage('기관단총!', '연사, 재장전 +5초, 공격력 -50%', 2000);
+                        break;
+                    case 'homing_master':
+                        this.showMessage('유도탄!', '유도탄 Lv.3, 공격력 -5%', 2000);
+                        break;
+                    case 'ricochet_shot':
+                        this.showMessage('탱탱볼!', '총알이 벽에 튕김', 2000);
+                        break;
+                    case 'vampire':
+                        this.showMessage('뱀파이어!', '흡혈, 재장전 +2초', 2000);
+                        break;
+                    case 'knife_shield':
                         this.showMessage('칼날이 나를 감싸네!', '칼날 3개 생성', 2000);
                         break;
                     case 'crit_master':
-                        player.critChance += 0.2;
-                        player.maxHealth = Math.floor(player.maxHealth * 0.9);
-                        player.health = Math.min(player.maxHealth, player.health);
                         this.showMessage('스치기만 해도 치명타!', '치명타 +20%, 체력 -10%', 2000);
                         break;
                     case 'armor':
-                        player.armor += 5;
                         this.showMessage('방어력!', '피해량 5 감소', 2000);
                         break;
                     case 'ammo_overflow':
-                        player.ammoRegenEndTime = Date.now() + 10000;
-                        player.ammoRegenAmount = 10;
-                        player.maxAmmo += 20;
                         this.showMessage('탄약이 넘쳐!', '탄약 자동 회복, 탄약통 +20', 2000);
                         break;
-                    // 기존 단순 보상도 지원
                     case 'maxHealth':
-                        player.maxHealth += value;
-                        player.health = Math.min(player.maxHealth, player.health + value);
                         this.showMessage(`최대 체력 +${value}!`, '', 1500);
                         break;
                     case 'currentHealth':
-                        player.health = Math.min(player.maxHealth, player.health + value);
                         this.createFloatingText(player.x + player.width / 2, player.y, `+${value}`, 'green');
                         this.showMessage(`체력 +${value}!`, '', 1500);
                         break;
                     case 'damage':
-                        player.baseDamage += value;
                         this.showMessage(`공격력 +${value}!`, '', 1500);
                         break;
                     case 'speed':
-                        player.speed += value;
                         this.showMessage(`이동 속도 +${value}!`, '', 1500);
                         break;
                     case 'multishot':
-                        player.multishot = Math.min(99, (player.multishot || 1) + 1);
                         this.showMessage(`다중 발사!`, `${player.multishot}발 동시 발사`, 2000);
                         break;
                     case 'orbiting_knife':
-                        player.orbitingKnives.push({
-                            angle: Math.random() * Math.PI * 2,
-                            radius: 60,
-                            speed: 0.05,
-                            damage: 15,
-                            lastHit: 0,
-                            cooldown: 200,
-                            color: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').color,
-                            emoji: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').emoji
-                        });
                         this.showMessage(`회전 칼날 획득!`, `플레이어 주위를 돕니다!`, 2000);
                         break;
                     case 'piercing_shot':
-                        player.piercingShot = Math.min(99, player.piercingShot + value);
                         this.showMessage(`관통 사격!`, `탄환이 적을 관통합니다! (Lv.${player.piercingShot})`, 2000);
                         break;
                     case 'explosive_shot':
-                        player.explosiveShot = Math.min(99, player.explosiveShot + value);
                         this.showMessage(`폭발 사격!`, `탄환이 폭발합니다! (Lv.${player.explosiveShot})`, 2000);
                         break;
                     case 'ricochet_shot':
-                        player.ricochetLevel = Math.min(99, player.ricochetLevel + value);
                         this.showMessage(`도탄 사격!`, `탄환이 벽에서 튕겨 나갑니다! (Lv.${player.ricochetLevel})`, 2000);
                         break;
                     case 'homing_shot':
-                        player.homingLevel = Math.min(99, player.homingLevel + value);
                         this.showMessage(`유도 사격!`, `탄환이 적을 추적합니다! (Lv.${player.homingLevel})`, 2000);
                         break;
                     case 'split_shot':
-                        player.splitLevel = Math.min(99, player.splitLevel + value);
                         this.showMessage(`분열 사격!`, `탄환이 분열하여 추가 피해를 줍니다! (Lv.${player.splitLevel})`, 2000);
                         break;
                     case 'life_steal':
-                        player.lifeStealPercent = Math.min(0.2, player.lifeStealPercent + value);
                         this.showMessage(`생명력 흡수!`, `피해량의 ${(player.lifeStealPercent * 100).toFixed(0)}% 체력 회복!`, 2000);
                         break;
                     case 'crit_chance':
-                        player.critChance = Math.min(0.5, player.critChance + value);
                         this.showMessage(`치명타 확률!`, `치명타 확률 ${(player.critChance * 100).toFixed(0)}%`, 2000);
                         break;
                     case 'cooldown_reduction':
-                        player.cooldownReduction = Math.min(0.5, player.cooldownReduction + value);
                         this.showMessage(`재사용 대기시간 감소!`, `발사 속도 ${(player.cooldownReduction * 100).toFixed(0)}% 증가!`, 2000);
-                        break;
-                    case 'armor':
-                        player.armor += value;
-                        this.showMessage(`방어력!`, `피해량 ${value} 감소!`, 2000);
                         break;
                     case 'time_stop':
                         this.gameState.timeStopEndTime = Date.now() + value;
@@ -4845,46 +4918,30 @@
                         this.showMessage(`시간 정지!`, `${value / 1000}초간 모든 적 정지!`, 2000);
                         break;
                     case 'ammo_regen':
-                        player.ammoRegenEndTime = Date.now() + 5000;
-                        player.lastAmmoRegenTick = Date.now();
-                        player.ammoRegenAmount = value;
                         this.showMessage(`탄약 재생!`, `5초간 탄약 자동 회복!`, 2000);
                         break;
                     case 'invincibility':
-                        player.invincibleEndTime = Date.now() + value;
                         this.showMessage(`무적!`, `${value / 1000}초간 무적 상태!`, 2000);
                         break;
                     case 'shield_boost':
-                        player.shieldBoostEndTime = Date.now() + value;
                         this.showMessage(`쉴드 강화!`, `${value / 1000}초간 피해량 50% 감소!`, 2000);
                         break;
                     case 'magnet':
-                        player.magnetEndTime = Date.now() + value;
                         this.showMessage(`자석 효과!`, `${value / 1000}초간 아이템 자동 수집!`, 2000);
                         break;
                     case 'health_regen':
-                        player.healthRegenEndTime = Date.now() + value;
-                        player.lastRegenTick = Date.now();
-                        player.effect = 5;
-                        player.tickInterval = 1000;
                         this.showMessage(`체력 재생!`, `${value / 1000}초간 체력 자동 회복!`, 2000);
                         break;
                     case 'rapid':
-                        player.rapidFireTime = Date.now() + value;
                         this.showMessage(`연발 모드!`, `${value / 1000}초간 발사 속도 증가!`, 2000);
                         break;
                     case 'max_health':
-                        player.maxHealth += value;
-                        player.health = Math.min(player.maxHealth, player.health + value);
                         this.showMessage(`최대 체력 +${value}!`, '', 1500);
                         break;
                     case 'ammo':
-                        player.ammo = Math.min(player.maxAmmo, player.ammo + value);
                         this.showMessage(`탄약 +${value}!`, '', 1500);
                         break;
                     case 'max_ammo':
-                        player.maxAmmo += value;
-                        player.ammo = Math.min(player.maxAmmo, player.ammo + value);
                         this.showMessage(`최대 탄약 +${value}!`, '', 1500);
                         break;
                 }
