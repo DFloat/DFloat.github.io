@@ -895,6 +895,8 @@
 
                 // 1. GlassCombatArena 클래스 생성자에 bossActive 플래그 추가
                 this.bossActive = false;
+                // 1. GlassCombatArena 클래스 생성자에 bossSpawnLock 플래그 추가
+                this.bossSpawnLock = false;
             }
             
             // 캔버스 크기를 창 크기에 맞게 조정
@@ -1419,8 +1421,9 @@
             spawnInitialWave = () => {
                 if (this.gameState.gameStatus !== 'spawning') return;
                 if (this.gameState.wave % 10 === 0) {
-                    // 보스 웨이브: 반드시 1마리만 소환
-                    if (this.bossActive) return;
+                    if (this.bossSpawnLock) return;
+                    this.bossSpawnLock = true;
+                    this.bossActive = true;
                     const bossTypes = [
                         'boss_alpha','boss_beta','boss_gamma','boss_delta','boss_epsilon','boss_zeta','boss_eta','boss_theta'
                     ];
@@ -1428,7 +1431,6 @@
                     const bossData = this.ENEMY_TYPES[bossType];
                     this.showMessage(`${bossData.name} 등장!`, '강력한 보스가 나타났습니다!', 2000);
                     this.gameState.enemies.push(this.createEnemy(bossType));
-                    this.bossActive = true;
                 } else {
                     // 일반 웨이브: 일반 몹만 등장
                     let enemyCount;
@@ -2196,7 +2198,10 @@
                                     this.addScore(enemy.points || 100);
                                     if (Math.random() < 0.4) this.gameState.items.push(this.createItem(enemy.x, enemy.y));
                                     // 보스가 죽으면 bossActive 해제
-                                    if (enemy.type && enemy.type.startsWith('boss')) this.bossActive = false;
+                                    if (enemy.type && enemy.type.startsWith('boss')) {
+                                        this.bossActive = false;
+                                        this.bossSpawnLock = false;
+                                    }
                                     this.gameState.enemies = this.gameState.enemies.filter(e => e !== enemy);
                                 }
                                 projectilesToRemove.add(i);
