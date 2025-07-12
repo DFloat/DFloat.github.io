@@ -1501,6 +1501,37 @@
                     phaser: {
                         name: '페이저', health: 40, speed: 2, damage: 20, color: '#06b6d4', size: 35, shootInterval: 1800, points: 200, phaseCooldown: 8000, lastPhase: 0, phaseDuration: 2000, isPhasing: false // 페이즈 스킬
                     },
+                    // === 완전히 새로운 적 10종 추가 ===
+                    timekeeper: {
+                        name: '타임키퍼', health: 50, speed: 2.0, damage: 20, color: '#ff6b9d', size: 35, shootInterval: 2000, points: 280, timeReverse: true, timeReverseCooldown: 12000, lastTimeReverse: 0, timeReverseDuration: 3000, isTimeReversed: false // 시간 역행
+                    },
+                    gravity: {
+                        name: '그래비티', health: 45, speed: 1.8, damage: 18, color: '#9d4edd', size: 38, shootInterval: 2500, points: 260, gravityField: true, gravityCooldown: 8000, lastGravity: 0, gravityRadius: 200, gravityStrength: 0.8 // 중력장 생성
+                    },
+                    echo: {
+                        name: '에코', health: 40, speed: 2.2, damage: 15, color: '#4cc9f0', size: 32, shootInterval: 1800, points: 240, echoShot: true, echoCount: 3, echoDelay: 500, lastEcho: 0 // 에코 발사
+                    },
+                    vortex: {
+                        name: '보르텍스', health: 55, speed: 1.5, damage: 25, color: '#7209b7', size: 40, shootInterval: 3000, points: 320, vortexPull: true, vortexCooldown: 10000, lastVortex: 0, vortexRadius: 250, vortexStrength: 2.0 // 소용돌이 끌어당김
+                    },
+                    prism: {
+                        name: '프리즘', health: 35, speed: 2.5, damage: 12, color: '#f72585', size: 30, shootInterval: 1600, points: 220, prismSplit: true, prismCount: 5, prismAngle: Math.PI/3, lastPrism: 0 // 프리즘 분산
+                    },
+                    quantum: {
+                        name: '퀀텀', health: 60, speed: 2.8, damage: 30, color: '#3a0ca3', size: 36, shootInterval: 2200, points: 300, quantumTeleport: true, quantumCooldown: 6000, lastQuantum: 0, quantumRange: 300 // 양자 순간이동
+                    },
+                    crystal: {
+                        name: '크리스탈', health: 70, speed: 1.2, damage: 35, color: '#4361ee', size: 45, shootInterval: 3500, points: 350, crystalShield: true, crystalCooldown: 15000, lastCrystal: 0, crystalDuration: 5000, isCrystalShielded: false // 크리스탈 방패
+                    },
+                    shadow: {
+                        name: '섀도우', health: 30, speed: 3.5, damage: 22, color: '#2b2d42', size: 28, shootInterval: 1400, points: 250, shadowClone: true, shadowCooldown: 9000, lastShadow: 0, shadowCount: 2 // 그림자 분신
+                    },
+                    plasma: {
+                        name: '플라즈마', health: 48, speed: 2.1, damage: 28, color: '#06ffa5', size: 34, shootInterval: 1900, points: 270, plasmaChain: true, plasmaChainCount: 4, plasmaChainRange: 150, lastPlasma: 0 // 플라즈마 체인
+                    },
+                    nebula: {
+                        name: '네뷸라', health: 65, speed: 1.6, damage: 32, color: '#ff9e00', size: 42, shootInterval: 2800, points: 340, nebulaCloud: true, nebulaCooldown: 12000, lastNebula: 0, nebulaRadius: 180, nebulaDamage: 8 // 네뷸라 구름
+                    },
                     // === 신규 보스 5종 ===
                     boss_delta: {
                         name: '델타 보스', health: 350, speed: 1.7, damage: 30, color: '#22223b', size: 80, shootInterval: 2000, points: 1200, blackholeCooldown: 9000, lastBlackhole: 0, blackholeRadius: 180 // 블랙홀 생성
@@ -1517,17 +1548,9 @@
                     boss_theta: {
                         name: '쎄타 보스', health: 370, speed: 1.8, damage: 26, color: '#3a86ff', size: 85, shootInterval: 2100, points: 1250, reflectAllCooldown: 10000, lastReflectAll: 0, reflectAllDuration: 2000 // 발사체 반사
                     },
-                    // === 새로운 적 3종 추가 ===
+                    // === 추가 적 2종 ===
                     juggernaut: {
                         name: '저거너트', health: 800, speed: 1.2, damage: 8, color: '#444444', size: 60, shootInterval: 3000, points: 600, description: '공격력은 약하지만 엄청난 체력을 자랑하는 거대 적.'
-                    },
-                    // 공중부양 적
-                    floater: {
-                        name: '플로터', health: 60, speed: 2.5, damage: 18, color: '#00e6e6', size: 32, shootInterval: 1800, points: 220, flies: true, description: '지상 장애물 무시, 공중에서 부유하며 이동하는 적.'
-                    },
-                    // 특이패턴 적(주기적 무적)
-                    phaser: {
-                        name: '페이저', health: 70, speed: 2, damage: 22, color: '#ff00cc', size: 34, shootInterval: 2000, points: 300, isInvincible: false, phaseInterval: 2000, lastPhase: 0, description: '주기적으로 잠시 무적이 되는 특수 적.'
                     },
                     // 참신한 하늘 몹 (탄막)
                     skyblaster: {
@@ -1999,7 +2022,15 @@
             // 플레이어2 발사 메서드
             shootPlayer2 = () => {
                 const player2 = this.gameState.player2;
-                if (!player2 || player2.isReloading || player2.ammo <= 0 || this.gameState.player2Dead) return;
+                if (!player2 || player2.ammo <= 0 || this.gameState.player2Dead) return;
+                
+                // 자동 재장전: 탄약이 없으면 자동으로 재장전
+                if (player2.ammo <= 0 && !player2.isReloading) {
+                    this.reloadPlayer2();
+                    return;
+                }
+                
+                if (player2.isReloading) return;
                 
                 const now = Date.now();
                 if (now - player2.lastShot < 200) return; // 발사 속도 제한
@@ -2143,6 +2174,9 @@
                     this.gameState.player2Dead = false;
                     this.gameState.player2.health = this.gameState.player2.maxHealth * 0.5; // 50% 체력으로 부활
                     this.gameState.player2.ammo = this.gameState.player2.maxAmmo;
+                    this.gameState.player2.isReloading = false; // 재장전 상태 초기화
+                    this.gameState.player2.gunRecoil = 0; // 반동 초기화
+                    this.gameState.player2.gunRecoilTarget = 0; // 반동 타겟 초기화
                     this.showMessage('플레이어2 부활!', '50% 체력으로 부활했습니다!', 3000);
                 }
                 
@@ -2899,20 +2933,20 @@
             
             // 일반 웨이브 생성
             spawnNormalWave = () => {
-                // 적 수 결정
+                // 적 수 결정 (더 많이 스폰)
                 let enemyCount;
                 if (this.gameState.wave === 1) {
-                    enemyCount = 3;
-                } else if (this.gameState.wave === 2) {
-                    enemyCount = 4;
-                } else if (this.gameState.wave === 3) {
                     enemyCount = 5;
+                } else if (this.gameState.wave === 2) {
+                    enemyCount = 7;
+                } else if (this.gameState.wave === 3) {
+                    enemyCount = 9;
                 } else if (this.gameState.wave <= 10) {
-                    enemyCount = Math.min(7, 5 + (this.gameState.wave - 3));
+                    enemyCount = Math.min(12, 9 + (this.gameState.wave - 3));
                 } else if (this.gameState.wave <= 15) {
-                    enemyCount = Math.min(10, 7 + (this.gameState.wave - 10));
+                    enemyCount = Math.min(15, 12 + (this.gameState.wave - 10));
                 } else {
-                    enemyCount = Math.min(12, 10 + (this.gameState.wave - 15));
+                    enemyCount = Math.min(18, 15 + (this.gameState.wave - 15));
                 }
                 
                 // 적 생성
@@ -2946,6 +2980,26 @@
                         if (this.gameState.wave >= 26 && Math.random() < 0.05) type = 'curse';
                         if (this.gameState.wave >= 27 && Math.random() < 0.05) type = 'floater';
                         if (this.gameState.wave >= 28 && Math.random() < 0.05) type = 'phaser';
+                        if (this.gameState.wave >= 29 && Math.random() < 0.04) type = 'ninja';
+                        if (this.gameState.wave >= 30 && Math.random() < 0.04) type = 'sniper';
+                        if (this.gameState.wave >= 31 && Math.random() < 0.04) type = 'berserker';
+                        if (this.gameState.wave >= 32 && Math.random() < 0.04) type = 'summoner';
+                        if (this.gameState.wave >= 33 && Math.random() < 0.04) type = 'guardian';
+                        if (this.gameState.wave >= 34 && Math.random() < 0.04) type = 'assassin';
+                        if (this.gameState.wave >= 35 && Math.random() < 0.04) type = 'heavy';
+                        if (this.gameState.wave >= 36 && Math.random() < 0.04) type = 'bomber';
+                        if (this.gameState.wave >= 37 && Math.random() < 0.04) type = 'medic';
+                        if (this.gameState.wave >= 38 && Math.random() < 0.04) type = 'drone';
+                        if (this.gameState.wave >= 39 && Math.random() < 0.03) type = 'timekeeper';
+                        if (this.gameState.wave >= 40 && Math.random() < 0.03) type = 'gravity';
+                        if (this.gameState.wave >= 41 && Math.random() < 0.03) type = 'echo';
+                        if (this.gameState.wave >= 42 && Math.random() < 0.03) type = 'vortex';
+                        if (this.gameState.wave >= 43 && Math.random() < 0.03) type = 'prism';
+                        if (this.gameState.wave >= 44 && Math.random() < 0.03) type = 'quantum';
+                        if (this.gameState.wave >= 45 && Math.random() < 0.03) type = 'crystal';
+                        if (this.gameState.wave >= 46 && Math.random() < 0.03) type = 'shadow';
+                        if (this.gameState.wave >= 47 && Math.random() < 0.03) type = 'plasma';
+                        if (this.gameState.wave >= 48 && Math.random() < 0.03) type = 'nebula';
                         this.gameState.enemies.push(this.createEnemy(type));
                     }, i * 500);
                 }
@@ -3065,9 +3119,9 @@
                     const dx = this.mouse.x - (character.x + character.width / 2);
                     const dy = this.mouse.y - (character.y + character.height / 2);
                     character.facing = Math.atan2(dy, dx);
-                    // gunRecoil 보간 (부드럽게 복귀)
-                    character.gunRecoil += (character.gunRecoilTarget - character.gunRecoil) * 0.25;
-                    if (Math.abs(character.gunRecoil - character.gunRecoilTarget) < 0.5) character.gunRecoil = character.gunRecoilTarget;
+                                    // gunRecoil 보간 (부드럽게 복귀)
+                character.gunRecoil += (character.gunRecoilTarget - character.gunRecoil) * 0.6;
+                if (Math.abs(character.gunRecoil - character.gunRecoilTarget) < 0.5) character.gunRecoil = character.gunRecoilTarget;
                 } else if (character.type === 'player2') {
                     // 플레이어2가 죽어있으면 입력 처리 안함
                     if (this.gameState.player2Dead) return;
@@ -3093,9 +3147,9 @@
                         }
                     }
                     
-                    // gunRecoil 보간
-                    character.gunRecoil += (character.gunRecoilTarget - character.gunRecoil) * 0.25;
-                    if (Math.abs(character.gunRecoil - character.gunRecoilTarget) < 0.5) character.gunRecoil = character.gunRecoilTarget;
+                                    // gunRecoil 보간
+                character.gunRecoil += (character.gunRecoilTarget - character.gunRecoil) * 0.6;
+                if (Math.abs(character.gunRecoil - character.gunRecoilTarget) < 0.5) character.gunRecoil = character.gunRecoilTarget;
                 } else if (character.type === 'ally') {
                     // 아군 AI: 가장 가까운 적을 찾아 이동하고 공격
                     let closestEnemy = null;
@@ -3484,6 +3538,328 @@
                         character.globalAlpha = 1;
                     }, character.phaseDuration || 2000);
                     character.lastPhase = now;
+                }
+
+                // === 새로운 적 10종 AI 로직 ===
+                
+                // 닌자: 은신 모드
+                if (character.type === 'ninja' && now - character.lastStealth > (character.stealthCooldown || 5000)) {
+                    character.isStealthed = true;
+                    character.globalAlpha = 0.2;
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '은신!', 'gray');
+                    setTimeout(() => {
+                        character.isStealthed = false;
+                        character.globalAlpha = 1;
+                    }, character.stealthDuration || 2000);
+                    character.lastStealth = now;
+                }
+
+                // 스나이퍼: 장거리 공격
+                if (character.type === 'sniper' && distance < (character.range || 400) && now - character.lastShot > character.shootInterval * this.gameState.timeSlowEffect) {
+                    const angle = Math.atan2(dy, dx);
+                    this.gameState.projectiles.push({
+                        id: Date.now() + Math.random(),
+                        x: character.x + character.width / 2,
+                        y: character.y + character.height / 2,
+                        vx: Math.cos(angle) * 12,
+                        vy: Math.sin(angle) * 12,
+                        radius: 2,
+                        damage: character.damage,
+                        life: 150,
+                        color: character.color,
+                        ownerId: character.id
+                    });
+                    character.lastShot = now;
+                }
+
+                // 광전사: 분노 모드
+                if (character.type === 'berserker' && character.health < character.maxHealth * (character.rageThreshold || 0.3) && !character.isRaging) {
+                    character.isRaging = true;
+                    character.speed *= character.rageSpeedBoost || 1.5;
+                    character.damage *= character.rageDamageBoost || 1.8;
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '분노!', 'red');
+                }
+
+                // 소환사: 소환 능력
+                if (character.type === 'summoner' && now - character.lastSummon > (character.summonCooldown || 8000)) {
+                    for (let i = 0; i < (character.summonCount || 2); i++) {
+                        const spawnX = character.x + (Math.random() - 0.5) * 100;
+                        const spawnY = character.y + (Math.random() - 0.5) * 100;
+                        const summonedEnemy = this.createEnemy(character.summonType || 'basic');
+                        summonedEnemy.x = Math.max(0, Math.min(this.canvas.width - summonedEnemy.width, spawnX));
+                        summonedEnemy.y = Math.max(50, Math.min(this.canvas.height - this.GROUND_Y - summonedEnemy.height, spawnY));
+                        this.gameState.enemies.push(summonedEnemy);
+                    }
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '소환!', 'yellow');
+                    character.lastSummon = now;
+                }
+
+                // 가디언: 방패 모드
+                if (character.type === 'guardian' && now - character.lastShield > (character.shieldCooldown || 6000)) {
+                    character.isShielded = true;
+                    character.damageReductionFactor = 0.3;
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '방패!', 'lightblue');
+                    setTimeout(() => {
+                        character.isShielded = false;
+                        character.damageReductionFactor = 1;
+                    }, character.shieldDuration || 3000);
+                    character.lastShield = now;
+                }
+
+                // 어쌔신: 뒤치기 공격
+                if (character.type === 'assassin' && distance < 50 && now - character.lastBackstab > 2000) {
+                    const backstabDamage = character.damage * (character.backstabMultiplier || 2.0);
+                    player.health = Math.max(0, player.health - backstabDamage);
+                    this.createFloatingText(player.x + player.width/2, player.y-20, `-${backstabDamage} 뒤치기!`, 'red');
+                    character.lastBackstab = now;
+                }
+
+                // 헤비: 중화기 공격
+                if (character.type === 'heavy' && distance < 600 && now - character.lastShot > character.shootInterval * this.gameState.timeSlowEffect) {
+                    const angle = Math.atan2(dy, dx);
+                    this.gameState.projectiles.push({
+                        id: Date.now() + Math.random(),
+                        x: character.x + character.width / 2,
+                        y: character.y + character.height / 2,
+                        vx: Math.cos(angle) * 4,
+                        vy: Math.sin(angle) * 4,
+                        radius: 8,
+                        damage: character.damage,
+                        life: 100,
+                        color: character.color,
+                        ownerId: character.id,
+                        splashDamage: true,
+                        splashRadius: character.splashRadius || 60
+                    });
+                    character.lastShot = now;
+                }
+
+                // 폭격기: 폭발성 탄환
+                if (character.type === 'bomber' && distance < 600 && now - character.lastShot > character.shootInterval * this.gameState.timeSlowEffect) {
+                    const angle = Math.atan2(dy, dx);
+                    this.gameState.projectiles.push({
+                        id: Date.now() + Math.random(),
+                        x: character.x + character.width / 2,
+                        y: character.y + character.height / 2,
+                        vx: Math.cos(angle) * 6,
+                        vy: Math.sin(angle) * 6,
+                        radius: 5,
+                        damage: character.damage,
+                        life: 120,
+                        color: character.color,
+                        ownerId: character.id,
+                        explosiveRadius: character.explosionRadius || 50
+                    });
+                    character.lastShot = now;
+                }
+
+                // 메딕: 치료 능력
+                if (character.type === 'medic' && now - character.lastHeal > (character.healCooldown || 10000)) {
+                    this.gameState.enemies.forEach(enemy => {
+                        if (enemy !== character) {
+                            const dx = (enemy.x + enemy.width/2) - (character.x + character.width/2);
+                            const dy = (enemy.y + enemy.height/2) - (character.y + character.height/2);
+                            const healDistance = Math.sqrt(dx*dx + dy*dy);
+                            if (healDistance < (character.healRadius || 150)) {
+                                enemy.health = Math.min(enemy.maxHealth, enemy.health + (character.healAmount || 20));
+                                this.createFloatingText(enemy.x + enemy.width/2, enemy.y-20, `+${character.healAmount || 20}`, 'green');
+                            }
+                        }
+                    });
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '치유!', 'green');
+                    character.lastHeal = now;
+                }
+
+                // 드론: 호버 모드
+                if (character.type === 'drone' && now - character.lastHover > (character.hoverCooldown || 4000)) {
+                    character.isHovering = true;
+                    character.speed *= 0.5;
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '호버!', 'cyan');
+                    setTimeout(() => {
+                        character.isHovering = false;
+                        character.speed = this.ENEMY_TYPES.drone.speed;
+                    }, character.hoverDuration || 2000);
+                    character.lastHover = now;
+                }
+
+                // === 새로운 적 10종 AI 로직 ===
+                
+                // 타임키퍼: 시간 역행
+                if (character.type === 'timekeeper' && now - character.lastTimeReverse > (character.timeReverseCooldown || 12000)) {
+                    character.isTimeReversed = true;
+                    this.gameState.timeSlowEffect = 0.3; // 시간을 느리게
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '시간 역행!', '#ff6b9d');
+                    setTimeout(() => {
+                        character.isTimeReversed = false;
+                        this.gameState.timeSlowEffect = 1;
+                    }, character.timeReverseDuration || 3000);
+                    character.lastTimeReverse = now;
+                }
+
+                // 그래비티: 중력장 생성
+                if (character.type === 'gravity' && now - character.lastGravity > (character.gravityCooldown || 8000)) {
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '중력장!', '#9d4edd');
+                    // 플레이어를 중력장 중심으로 끌어당김
+                    const dx = (character.x + character.width/2) - (player.x + player.width/2);
+                    const dy = (character.y + character.height/2) - (player.y + player.height/2);
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < (character.gravityRadius || 200)) {
+                        player.vx += (dx/dist) * (character.gravityStrength || 0.8);
+                        player.vy += (dy/dist) * (character.gravityStrength || 0.8);
+                    }
+                    character.lastGravity = now;
+                }
+
+                // 에코: 에코 발사
+                if (character.type === 'echo' && distance < 600 && now - character.lastEcho > character.shootInterval * this.gameState.timeSlowEffect) {
+                    const angle = Math.atan2(dy, dx);
+                    for (let i = 0; i < (character.echoCount || 3); i++) {
+                        setTimeout(() => {
+                            this.gameState.projectiles.push({
+                                id: Date.now() + Math.random(),
+                                x: character.x + character.width / 2,
+                                y: character.y + character.height / 2,
+                                vx: Math.cos(angle) * 7,
+                                vy: Math.sin(angle) * 7,
+                                radius: 4,
+                                damage: character.damage,
+                                life: 100,
+                                color: character.color,
+                                ownerId: character.id
+                            });
+                        }, i * (character.echoDelay || 500));
+                    }
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '에코!', '#4cc9f0');
+                    character.lastEcho = now;
+                }
+
+                // 보르텍스: 소용돌이 끌어당김
+                if (character.type === 'vortex' && now - character.lastVortex > (character.vortexCooldown || 10000)) {
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '보르텍스!', '#7209b7');
+                    // 강력한 소용돌이로 플레이어를 끌어당김
+                    const dx = (character.x + character.width/2) - (player.x + player.width/2);
+                    const dy = (character.y + character.height/2) - (player.y + player.height/2);
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < (character.vortexRadius || 250)) {
+                        player.vx += (dx/dist) * (character.vortexStrength || 2.0);
+                        player.vy += (dy/dist) * (character.vortexStrength || 2.0);
+                    }
+                    character.lastVortex = now;
+                }
+
+                // 프리즘: 프리즘 분산
+                if (character.type === 'prism' && distance < 600 && now - character.lastPrism > character.shootInterval * this.gameState.timeSlowEffect) {
+                    const angle = Math.atan2(dy, dx);
+                    const prismCount = character.prismCount || 5;
+                    const prismAngle = character.prismAngle || Math.PI/3;
+                    
+                    for (let i = 0; i < prismCount; i++) {
+                        const spreadAngle = angle - prismAngle/2 + (prismAngle * i / (prismCount - 1));
+                        this.gameState.projectiles.push({
+                            id: Date.now() + Math.random(),
+                            x: character.x + character.width / 2,
+                            y: character.y + character.height / 2,
+                            vx: Math.cos(spreadAngle) * 6,
+                            vy: Math.sin(spreadAngle) * 6,
+                            radius: 3,
+                            damage: character.damage,
+                            life: 90,
+                            color: character.color,
+                            ownerId: character.id
+                        });
+                    }
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '프리즘!', '#f72585');
+                    character.lastPrism = now;
+                }
+
+                // 퀀텀: 양자 순간이동
+                if (character.type === 'quantum' && now - character.lastQuantum > (character.quantumCooldown || 6000)) {
+                    const quantumRange = character.quantumRange || 300;
+                    const newX = character.x + (Math.random() - 0.5) * quantumRange;
+                    const newY = character.y + (Math.random() - 0.5) * quantumRange;
+                    character.x = Math.max(0, Math.min(this.canvas.width - character.width, newX));
+                    character.y = Math.max(50, Math.min(this.canvas.height - this.GROUND_Y - character.height, newY));
+                    this.createCollectParticles(character.x, character.y, character.color);
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '퀀텀!', '#3a0ca3');
+                    character.lastQuantum = now;
+                }
+
+                // 크리스탈: 크리스탈 방패
+                if (character.type === 'crystal' && now - character.lastCrystal > (character.crystalCooldown || 15000)) {
+                    character.isCrystalShielded = true;
+                    character.damageReductionFactor = 0.2; // 80% 데미지 감소
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '크리스탈!', '#4361ee');
+                    setTimeout(() => {
+                        character.isCrystalShielded = false;
+                        character.damageReductionFactor = 1;
+                    }, character.crystalDuration || 5000);
+                    character.lastCrystal = now;
+                }
+
+                // 섀도우: 그림자 분신
+                if (character.type === 'shadow' && now - character.lastShadow > (character.shadowCooldown || 9000)) {
+                    const shadowCount = character.shadowCount || 2;
+                    for (let i = 0; i < shadowCount; i++) {
+                        const shadowX = character.x + (Math.random() - 0.5) * 100;
+                        const shadowY = character.y + (Math.random() - 0.5) * 100;
+                        const shadow = {
+                            ...character,
+                            id: Date.now() + Math.random(),
+                            x: shadowX,
+                            y: shadowY,
+                            health: character.health * 0.5,
+                            maxHealth: character.maxHealth * 0.5,
+                            isShadow: true
+                        };
+                        this.gameState.enemies.push(shadow);
+                    }
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '섀도우!', '#2b2d42');
+                    character.lastShadow = now;
+                }
+
+                // 플라즈마: 플라즈마 체인
+                if (character.type === 'plasma' && distance < 600 && now - character.lastPlasma > character.shootInterval * this.gameState.timeSlowEffect) {
+                    const angle = Math.atan2(dy, dx);
+                    const chainCount = character.plasmaChainCount || 4;
+                    const chainRange = character.plasmaChainRange || 150;
+                    
+                    for (let i = 0; i < chainCount; i++) {
+                        const chainAngle = angle + (i - chainCount/2) * 0.3;
+                        this.gameState.projectiles.push({
+                            id: Date.now() + Math.random(),
+                            x: character.x + character.width / 2,
+                            y: character.y + character.height / 2,
+                            vx: Math.cos(chainAngle) * 8,
+                            vy: Math.sin(chainAngle) * 8,
+                            radius: 5,
+                            damage: character.damage,
+                            life: 120,
+                            color: character.color,
+                            ownerId: character.id,
+                            plasmaChain: true,
+                            chainRange: chainRange
+                        });
+                    }
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '플라즈마!', '#06ffa5');
+                    character.lastPlasma = now;
+                }
+
+                // 네뷸라: 네뷸라 구름
+                if (character.type === 'nebula' && now - character.lastNebula > (character.nebulaCooldown || 12000)) {
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '네뷸라!', '#ff9e00');
+                    // 네뷸라 구름 생성 - 주변에 지속 데미지
+                    const nebulaRadius = character.nebulaRadius || 180;
+                    const nebulaDamage = character.nebulaDamage || 8;
+                    
+                    // 플레이어가 네뷸라 범위 안에 있으면 데미지
+                    const dx = (character.x + character.width/2) - (player.x + player.width/2);
+                    const dy = (character.y + character.height/2) - (player.y + player.height/2);
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < nebulaRadius) {
+                        player.health = Math.max(0, player.health - nebulaDamage);
+                        this.createFloatingText(player.x + player.width/2, player.y-20, `-${nebulaDamage}`, '#ff9e00');
+                    }
+                    character.lastNebula = now;
                 }
                 // ...
 
@@ -5949,9 +6325,7 @@
                         <div style="color:${categoryColor}; margin-bottom:20px; font-size:14px;">${category}</div>
                         
                         <div style="width:100px; height:100px; background:${data.color}; border-radius:20px; margin:0 auto 20px; display:flex; align-items:center; justify-content:center; font-size:32px; position:relative; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
-                            <div style="position:absolute; top:20px; left:50%; transform:translateX(-50%); width:20px; height:20px; background:rgba(255,255,255,0.8); border-radius:50%;"></div>
-                            <div style="position:absolute; top:25px; left:50%; transform:translateX(-50%); width:8px; height:8px; background:#000; border-radius:50%;"></div>
-                            <div style="position:absolute; bottom:25px; left:50%; transform:translateX(-50%); width:30px; height:8px; background:rgba(255,255,255,0.6); border-radius:4px;"></div>
+                            <div style="position:absolute; top:15px; left:50%; transform:translateX(-50%); font-size:16px;">:D</div>
                             ${this.getEnemyEmoji(type)}
                         </div>
                         
