@@ -698,7 +698,7 @@
                         name: '드론', health: 20, speed: 7, damage: 10, color: '#94a3b8', size: 20, shootInterval: 1000, points: 80, flies: true // 드론 전용 속성
                     },
                     spitter: {
-                        name: '침뱉는병', health: 50, speed: 1.3, damage: 15, color: '#16a34a', size: 35, shootInterval: 2500, points: 180, slowEffect: 0.5, slowDuration: 3000 // 침뱉는병 전용 속성
+                        name: '슬라임병', health: 50, speed: 1.3, damage: 15, color: '#16a34a', size: 35, shootInterval: 2500, points: 180, slowEffect: 0.5, slowDuration: 3000 // 슬라임병 전용 속성
                     },
                     berserker: {
                         name: '광전사', health: 60, speed: 3, damage: 20, color: '#be123c', size: 38, shootInterval: 1800, points: 250, rageThreshold: 0.3, rageSpeedBoost: 1.5, rageDamageBoost: 1.5, isRaging: false // 광전사 전용 속성
@@ -813,6 +813,12 @@
                     },
                     curse: {
                         name: '저주 적', health: 28, speed: 1.6, damage: 10, color: '#a3a3a3', size: 30, shootInterval: 2200, points: 170, cursesPlayer: true, curseDuration: 2500 // 맞추면 디버프
+                    },
+                    floater: {
+                        name: '플로터', health: 35, speed: 2.5, damage: 15, color: '#8b5cf6', size: 32, shootInterval: 2000, points: 180, flies: true, floatDirection: 0, lastDirectionChange: 0 // 자유로운 움직임
+                    },
+                    phaser: {
+                        name: '페이저', health: 40, speed: 2, damage: 20, color: '#06b6d4', size: 35, shootInterval: 1800, points: 200, phaseCooldown: 8000, lastPhase: 0, phaseDuration: 2000, isPhasing: false // 페이즈 스킬
                     },
                     // === 신규 보스 5종 ===
                     boss_delta: {
@@ -1718,6 +1724,29 @@
                         if (this.gameState.wave >= 3 && Math.random() < 0.15) type = 'tank';
                         if (this.gameState.wave >= 4 && Math.random() < 0.1) type = 'sniper';
                         if (this.gameState.wave >= 5 && Math.random() < 0.1) type = 'bomber';
+                        if (this.gameState.wave >= 6 && Math.random() < 0.08) type = 'guardian';
+                        if (this.gameState.wave >= 7 && Math.random() < 0.08) type = 'assassin';
+                        if (this.gameState.wave >= 8 && Math.random() < 0.08) type = 'heavy';
+                        if (this.gameState.wave >= 9 && Math.random() < 0.06) type = 'ghost';
+                        if (this.gameState.wave >= 10 && Math.random() < 0.06) type = 'medic';
+                        if (this.gameState.wave >= 11 && Math.random() < 0.06) type = 'summoner';
+                        if (this.gameState.wave >= 12 && Math.random() < 0.06) type = 'jumper';
+                        if (this.gameState.wave >= 13 && Math.random() < 0.06) type = 'shielded';
+                        if (this.gameState.wave >= 14 && Math.random() < 0.06) type = 'teleporter';
+                        if (this.gameState.wave >= 15 && Math.random() < 0.06) type = 'drone';
+                        if (this.gameState.wave >= 16 && Math.random() < 0.06) type = 'spitter';
+                        if (this.gameState.wave >= 17 && Math.random() < 0.06) type = 'berserker';
+                        if (this.gameState.wave >= 18 && Math.random() < 0.05) type = 'leech';
+                        if (this.gameState.wave >= 19 && Math.random() < 0.05) type = 'mine';
+                        if (this.gameState.wave >= 20 && Math.random() < 0.05) type = 'freezer';
+                        if (this.gameState.wave >= 21 && Math.random() < 0.05) type = 'reflector';
+                        if (this.gameState.wave >= 22 && Math.random() < 0.05) type = 'healer';
+                        if (this.gameState.wave >= 23 && Math.random() < 0.05) type = 'portal';
+                        if (this.gameState.wave >= 24 && Math.random() < 0.05) type = 'exploder';
+                        if (this.gameState.wave >= 25 && Math.random() < 0.05) type = 'magnet';
+                        if (this.gameState.wave >= 26 && Math.random() < 0.05) type = 'curse';
+                        if (this.gameState.wave >= 27 && Math.random() < 0.05) type = 'floater';
+                        if (this.gameState.wave >= 28 && Math.random() < 0.05) type = 'phaser';
                         this.gameState.enemies.push(this.createEnemy(type));
                     }, i * 500);
                 }
@@ -2027,55 +2056,184 @@
                     }
                 }
 
-                // 신규 적/보스 고유 스킬/AI 구현 예시 (주석)
-                if (character.type === 'mirror' && player) {
-                    // 미러 적: 플레이어 움직임을 따라함 (좌우 반전)
-                    character.vx = -player.vx;
-                    character.vy = player.vy;
+                // === 적별 고유 스킬/AI 구현 ===
+                
+                // 소환사: 주기적으로 적 소환
+                if (character.type === 'summoner' && now - character.lastSummon > (character.summonCooldown || 8000)) {
+                    const summonCount = character.summonCount || 1;
+                    for (let i = 0; i < summonCount; i++) {
+                        const spawnX = character.x + (Math.random() - 0.5) * 80;
+                        const spawnY = character.y + (Math.random() - 0.5) * 80;
+                        const summonedEnemy = this.createEnemy(character.summonType || 'basic');
+                        summonedEnemy.x = Math.max(0, Math.min(this.canvas.width - summonedEnemy.width, spawnX));
+                        summonedEnemy.y = Math.max(50, Math.min(this.canvas.height - this.GROUND_Y - summonedEnemy.height, spawnY));
+                        this.gameState.enemies.push(summonedEnemy);
+                    }
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '소환!', 'yellow');
+                    character.lastSummon = now;
                 }
-                if (character.type === 'leech') {
-                    // 흡혈 적: 플레이어에 닿으면 체력 흡수
-                    // (충돌 체크 후 player.health -= leechAmount, character.health += leechAmount 등 구현)
+
+                // 유령: 무적 상태 토글
+                if (character.type === 'ghost' && now - character.lastInvincibility > (character.invincibilityCooldown || 3000)) {
+                    character.isInvincible = !character.isInvincible;
+                    character.lastInvincibility = now;
+                    this.createFloatingText(character.x + character.width/2, character.y-20, character.isInvincible ? '무적!' : '취약!', character.isInvincible ? 'white' : 'red');
                 }
-                if (character.type === 'mine') {
-                    // 지뢰 적: 플레이어 근처에서 폭발
+
+                // 순간이동병: 순간이동
+                if (character.type === 'teleporter' && now - character.lastTeleport > (character.teleportCooldown || 4000)) {
+                    const newX = player.x + (Math.random() - 0.5) * 200;
+                    const newY = player.y + (Math.random() - 0.5) * 200;
+                    character.x = Math.max(0, Math.min(this.canvas.width - character.width, newX));
+                    character.y = Math.max(50, Math.min(this.canvas.height - this.GROUND_Y - character.height, newY));
+                    this.createCollectParticles(character.x, character.y, character.color);
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '순간이동!', 'cyan');
+                    character.lastTeleport = now;
                 }
-                if (character.type === 'freezer') {
-                    // 빙결 적: 발사체에 맞으면 플레이어 이동 속도 감소
+
+                // 슬라임병: 느려지는 탄환 발사
+                if (character.type === 'spitter' && distance < 600 && now - character.lastShot > character.shootInterval * this.gameState.timeSlowEffect) {
+                    const angle = Math.atan2(dy, dx);
+                    this.gameState.projectiles.push({
+                        id: Date.now() + Math.random(),
+                        x: character.x + character.width / 2,
+                        y: character.y + character.height / 2,
+                        vx: Math.cos(angle) * 6,
+                        vy: Math.sin(angle) * 6,
+                        radius: 4,
+                        damage: character.damage,
+                        life: 100,
+                        color: character.color,
+                        ownerId: character.id,
+                        slowEffect: character.slowEffect || 0.5,
+                        slowDuration: character.slowDuration || 3000
+                    });
+                    character.lastShot = now;
                 }
-                if (character.type === 'reflector') {
-                    // 반사 적: 일정 확률로 플레이어 탄환 반사
+
+                // 흡혈적: 플레이어에 닿으면 체력 흡수
+                if (character.type === 'leech' && player) {
+                    const dx = (player.x + player.width/2) - (character.x + character.width/2);
+                    const dy = (player.y + player.height/2) - (character.y + character.height/2);
+                    const touchDistance = Math.sqrt(dx*dx + dy*dy);
+                    if (touchDistance < 30 && now - character.lastLeech > 1000) {
+                        const leechAmount = character.leechAmount || 10;
+                        player.health = Math.max(0, player.health - leechAmount);
+                        character.health = Math.min(character.maxHealth, character.health + leechAmount);
+                        this.createFloatingText(player.x + player.width/2, player.y-20, `-${leechAmount} 흡혈`, 'red');
+                        this.createFloatingText(character.x + character.width/2, character.y-20, `+${leechAmount} 흡수`, 'green');
+                        character.lastLeech = now;
+                    }
                 }
-                if (character.type === 'healer') {
-                    // 힐러 적: 주기적으로 주변 적 체력 회복
+
+                // 지뢰 적: 플레이어 근처에서 폭발
+                if (character.type === 'mine' && player) {
+                    const dx = (player.x + player.width/2) - (character.x + character.width/2);
+                    const dy = (player.y + player.height/2) - (character.y + character.height/2);
+                    const mineDistance = Math.sqrt(dx*dx + dy*dy);
+                    if (mineDistance < (character.explodeRadius || 60)) {
+                        this.createExplosion(character.x + character.width/2, character.y + character.height/2, 80, character.damage, character.id);
+                        this.createFloatingText(character.x + character.width/2, character.y-20, '폭발!', 'orange');
+                        this.gameState.enemies = this.gameState.enemies.filter(e => e !== character);
+                        return;
+                    }
                 }
-                if (character.type === 'portal') {
-                    // 포탈 적: 순간이동하며 플레이어 근처에 나타남
+
+                // 빙결 적: 플레이어를 얼림
+                if (character.type === 'freezer' && distance < 600 && now - character.lastFreeze > (character.freezeCooldown || 5000)) {
+                    player.speed *= 0.3;
+                    this.createFloatingText(player.x + player.width/2, player.y-20, '빙결!', 'lightblue');
+                    setTimeout(() => {
+                        player.speed = this.ENEMY_TYPES[player.type]?.speed || 5;
+                    }, character.freezeDuration || 2000);
+                    character.lastFreeze = now;
                 }
-                if (character.type === 'exploder') {
-                    // 폭발 적: 죽을 때 폭발, 주변에 데미지
+
+                // 반사 적: 탄환 반사
+                if (character.type === 'reflector' && Math.random() < (character.reflectChance || 0.3)) {
+                    // 탄환 반사 로직은 발사체 충돌 처리에서 구현
                 }
-                if (character.type === 'magnet') {
-                    // 자석 적: 플레이어의 아이템을 끌어당김
+
+                // 힐러 적: 주변 적 회복
+                if (character.type === 'healer' && now - character.lastHeal > (character.healCooldown || 4000)) {
+                    this.gameState.enemies.forEach(enemy => {
+                        if (enemy !== character) {
+                            const dx = (enemy.x + enemy.width/2) - (character.x + character.width/2);
+                            const dy = (enemy.y + enemy.height/2) - (character.y + character.height/2);
+                            const healDistance = Math.sqrt(dx*dx + dy*dy);
+                            if (healDistance < (character.healRadius || 120)) {
+                                enemy.health = Math.min(enemy.maxHealth, enemy.health + (character.healAmount || 15));
+                                this.createFloatingText(enemy.x + enemy.width/2, enemy.y-20, `+${character.healAmount || 15}`, 'green');
+                            }
+                        }
+                    });
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '치유!', 'green');
+                    character.lastHeal = now;
                 }
-                if (character.type === 'curse') {
-                    // 저주 적: 맞추면 플레이어에게 디버프
+
+                // 포탈 적: 순간이동
+                if (character.type === 'portal' && now - character.lastTeleport > (character.teleportCooldown || 3000)) {
+                    const newX = player.x + (Math.random() - 0.5) * 150;
+                    const newY = player.y + (Math.random() - 0.5) * 150;
+                    character.x = Math.max(0, Math.min(this.canvas.width - character.width, newX));
+                    character.y = Math.max(50, Math.min(this.canvas.height - this.GROUND_Y - character.height, newY));
+                    this.createCollectParticles(character.x, character.y, character.color);
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '포탈!', 'purple');
+                    character.lastTeleport = now;
                 }
-                // === 신규 보스 ===
-                if (character.type === 'boss_delta') {
-                    // 델타 보스: 주기적으로 블랙홀 생성(플레이어 끌어당김)
+
+                // 폭발 적: 죽을 때 폭발 (적 사망 처리에서 구현)
+
+                // 자석 적: 유도 탄환 발사
+                if (character.type === 'magnet' && distance < 600 && now - character.lastShot > character.shootInterval * this.gameState.timeSlowEffect) {
+                    const angle = Math.atan2(dy, dx);
+                    this.gameState.projectiles.push({
+                        id: Date.now() + Math.random(),
+                        x: character.x + character.width / 2,
+                        y: character.y + character.height / 2,
+                        vx: Math.cos(angle) * 5,
+                        vy: Math.sin(angle) * 5,
+                        radius: 3,
+                        damage: character.damage,
+                        life: 120,
+                        color: character.color,
+                        ownerId: character.id,
+                        isHoming: true,
+                        homingStrength: 0.1
+                    });
+                    character.lastShot = now;
                 }
-                if (character.type === 'boss_epsilon') {
-                    // 엡실론 보스: 체력 일정 이하에서 분신 생성
+
+                // 저주 적: 저주 효과
+                if (character.type === 'curse' && distance < 600 && now - character.lastCurse > (character.curseCooldown || 6000)) {
+                    player.damageReductionFactor = 0.7;
+                    this.createFloatingText(player.x + player.width/2, player.y-20, '저주!', 'purple');
+                    setTimeout(() => {
+                        player.damageReductionFactor = 1;
+                    }, character.curseDuration || 2500);
+                    character.lastCurse = now;
                 }
-                if (character.type === 'boss_zeta') {
-                    // 제타 보스: 주기적으로 시간 왜곡(속도 랜덤화)
+
+                // 플로터: 자유로운 움직임
+                if (character.type === 'floater') {
+                    if (now - character.lastDirectionChange > 2000) {
+                        character.floatDirection = Math.random() * Math.PI * 2;
+                        character.lastDirectionChange = now;
+                    }
+                    character.vx += Math.cos(character.floatDirection) * 0.5;
+                    character.vy += Math.sin(character.floatDirection) * 0.5;
                 }
-                if (character.type === 'boss_eta') {
-                    // 에타 보스: 일정 시간마다 레이저 발사
-                }
-                if (character.type === 'boss_theta') {
-                    // 쎄타 보스: 일정 시간마다 플레이어 발사체 반사
+
+                // 페이저: 페이즈 스킬
+                if (character.type === 'phaser' && now - character.lastPhase > (character.phaseCooldown || 8000)) {
+                    character.isPhasing = true;
+                    character.globalAlpha = 0.3;
+                    this.createFloatingText(character.x + character.width/2, character.y-20, '페이즈!', 'cyan');
+                    setTimeout(() => {
+                        character.isPhasing = false;
+                        character.globalAlpha = 1;
+                    }, character.phaseDuration || 2000);
+                    character.lastPhase = now;
                 }
                 // ...
 
@@ -2195,30 +2353,40 @@
                     }
                 }
                 if (character.type === 'boss_delta') {
-                    // 1. 블랙홀
-                    if (now - character.lastBlackhole > character.blackholeCooldown) {
+                    // 1. 블랙홀 (쿨다운 증가, 효과 감소)
+                    if (now - character.lastBlackhole > (character.blackholeCooldown || 15000)) {
                         const dx = (character.x + character.width/2) - (player.x + player.width/2);
                         const dy = (character.y + character.height/2) - (player.y + player.height/2);
                         const dist = Math.sqrt(dx*dx + dy*dy);
                         if (dist < 600) {
-                            player.vx += dx/dist * 30;
-                            player.vy += dy/dist * 30;
-                            this.createFloatingText(player.x + player.width/2, player.y-20, '블랙홀!', 'purple');
+                            player.vx += dx/dist * 15; // 효과 감소
+                            player.vy += dy/dist * 15;
+                            if (!character.lastBlackholeEffect || now - character.lastBlackholeEffect > 2000) {
+                                this.createFloatingText(player.x + player.width/2, player.y-20, '블랙홀!', 'purple');
+                                character.lastBlackholeEffect = now;
+                            }
                         }
                         this.createFloatingText(character.x + character.width/2, character.y-20, '블랙홀!', 'purple');
                         character.lastBlackhole = now;
                     }
-                    // 2. 광역 폭발
-                    if (now - character.lastExplosion > character.explosionCooldown) {
-                        this.createExplosion(character.x + character.width/2, character.y + character.height/2, 120, character.damage * 1.2, character.id);
+                    // 2. 광역 폭발 (데미지 감소)
+                    if (now - character.lastExplosion > (character.explosionCooldown || 12000)) {
+                        this.createExplosion(character.x + character.width/2, character.y + character.height/2, 100, character.damage * 0.8, character.id);
                         this.createFloatingText(character.x + character.width/2, character.y-20, '광역 폭발!', 'red');
                         character.lastExplosion = now;
                     }
-                    // 3. 플레이어 둔화
-                    if (now - character.lastSlow > character.slowCooldown) {
-                        player.speed = Math.max(1, player.speed * 0.5);
-                        this.createFloatingText(player.x + player.width/2, player.y-20, '둔화!', 'blue');
-                        setTimeout(() => { player.speed = 5; }, character.slowDuration);
+                    // 3. 플레이어 둔화 (효과 감소, 중복 방지)
+                    if (now - character.lastSlow > (character.slowCooldown || 10000)) {
+                        if (!player.isSlowed) {
+                            player.isSlowed = true;
+                            player.originalSpeed = player.speed;
+                            player.speed = Math.max(2, player.speed * 0.7); // 둔화 효과 감소
+                            this.createFloatingText(player.x + player.width/2, player.y-20, '둔화!', 'blue');
+                            setTimeout(() => { 
+                                player.speed = player.originalSpeed || 5; 
+                                player.isSlowed = false;
+                            }, character.slowDuration || 3000);
+                        }
                         character.lastSlow = now;
                     }
                 }
@@ -2253,39 +2421,39 @@
                     }
                 }
                 if (character.type === 'boss_zeta') {
-                    // 1. 시간 왜곡(슬로우)
-                    if (!character.isTimeWarp && now - character.lastTimeWarp > character.timeWarpCooldown) {
-                        this.gameState.timeSlowEffect = 0.5;
+                    // 1. 시간 왜곡(슬로우) - 쿨다운 증가
+                    if (!character.isTimeWarp && now - character.lastTimeWarp > (character.timeWarpCooldown || 12000)) {
+                        this.gameState.timeSlowEffect = 0.6; // 효과 감소
                         character.isTimeWarp = true;
                         this.createFloatingText(character.x + character.width/2, character.y-20, '시간 왜곡!', 'blue');
                         setTimeout(() => {
                             this.gameState.timeSlowEffect = 1;
                             character.isTimeWarp = false;
-                        }, character.timeWarpDuration);
+                        }, character.timeWarpDuration || 2000);
                         character.lastTimeWarp = now;
                     }
-                    // 2. 연발 사격
-                    if (!character.isRapidFire && now - character.lastRapidFire > character.rapidFireCooldown) {
+                    // 2. 연발 사격 - 데미지 감소
+                    if (!character.isRapidFire && now - character.lastRapidFire > (character.rapidFireCooldown || 10000)) {
                         character.isRapidFire = true;
                         this.createFloatingText(character.x + character.width/2, character.y-20, '연발 사격!', 'orange');
                         let shots = 0;
                         const rapid = () => {
-                            if (shots < 10) {
+                            if (shots < 8) { // 발사 수 감소
                                 const angle = Math.atan2(player.y - character.y, player.x - character.x) + (Math.random()-0.5)*0.3;
                                 this.gameState.projectiles.push({
                                     id: Date.now() + Math.random(),
                                     x: character.x + character.width / 2,
                                     y: character.y + character.height / 2,
-                                    vx: Math.cos(angle) * 12,
-                                    vy: Math.sin(angle) * 12,
-                                    radius: 5,
-                                    damage: character.damage * 0.7,
-                                    life: 90,
+                                    vx: Math.cos(angle) * 10, // 속도 감소
+                                    vy: Math.sin(angle) * 10,
+                                    radius: 4, // 크기 감소
+                                    damage: character.damage * 0.5, // 데미지 감소
+                                    life: 80,
                                     color: character.color,
                                     ownerId: character.id
                                 });
                                 shots++;
-                                setTimeout(rapid, 80);
+                                setTimeout(rapid, 120); // 발사 간격 증가
                             } else {
                                 character.isRapidFire = false;
                             }
@@ -2293,8 +2461,8 @@
                         rapid();
                         character.lastRapidFire = now;
                     }
-                    // 3. 랜덤 위치 이동
-                    if (now - character.lastRandomMove > character.randomMoveCooldown) {
+                    // 3. 랜덤 위치 이동 - 쿨다운 증가
+                    if (now - character.lastRandomMove > (character.randomMoveCooldown || 15000)) {
                         character.x = Math.random() * (this.canvas.width - character.width);
                         character.y = Math.random() * (this.canvas.height - this.GROUND_Y - character.height);
                         this.createCollectParticles(character.x, character.y, character.color);
@@ -2303,78 +2471,109 @@
                     }
                 }
                 if (character.type === 'boss_eta') {
-                    // 1. 레이저
-                    if (now - character.lastLaser > character.laserCooldown) {
+                    // 1. 레이저 (데미지 감소, 쿨다운 증가)
+                    if (now - character.lastLaser > (character.laserCooldown || 12000)) {
                         const angle = Math.atan2(player.y - character.y, player.x - character.x);
-                        for (let d = 60; d < 400; d += 40) {
+                        for (let d = 60; d < 300; d += 50) { // 범위 감소
                             const lx = character.x + character.width/2 + Math.cos(angle) * d;
                             const ly = character.y + character.height/2 + Math.sin(angle) * d;
-                            this.createExplosion(lx, ly, 40, character.damage * 1.2, character.id);
+                            this.createExplosion(lx, ly, 30, character.damage * 0.8, character.id); // 데미지 감소
                         }
                         this.createFloatingText(character.x + character.width/2, character.y-20, '레이저!', 'red');
                         character.lastLaser = now;
                     }
-                    // 2. 연속 점프
-                    if (now - character.lastJump > character.jumpCooldown) {
+                    // 2. 연속 점프 (점프 수 감소)
+                    if (now - character.lastJump > (character.jumpCooldown || 10000)) {
                         let jumpIdx = 0;
                         const jump = () => {
-                            if (jumpIdx < character.jumpCount) {
-                                character.vy = -character.jumpPower;
+                            if (jumpIdx < (character.jumpCount || 2)) { // 점프 수 감소
+                                character.vy = -(character.jumpPower || 20);
                                 this.createFloatingText(character.x + character.width/2, character.y-20, '점프!', 'lime');
                                 jumpIdx++;
-                                setTimeout(jump, 400);
+                                setTimeout(jump, 500); // 간격 증가
                             }
                         };
                         jump();
                         character.lastJump = now;
                     }
-                    // 3. 방어력 증가
-                    if (!character.isArmorBuffed && now - character.lastArmorBuff > character.armorBuffCooldown) {
-                        character.armor = (character.armor || 0) + 20;
+                    // 3. 방어력 증가 (효과 감소)
+                    if (!character.isArmorBuffed && now - character.lastArmorBuff > (character.armorBuffCooldown || 15000)) {
+                        character.armor = (character.armor || 0) + 10; // 방어력 감소
                         character.isArmorBuffed = true;
                         this.createFloatingText(character.x + character.width/2, character.y-20, '방어력 증가!', 'blue');
                         setTimeout(() => {
-                            character.armor = (character.armor || 0) - 20;
+                            character.armor = (character.armor || 0) - 10;
                             character.isArmorBuffed = false;
-                        }, character.armorBuffDuration);
+                        }, character.armorBuffDuration || 3000);
                         character.lastArmorBuff = now;
                     }
                 }
                 if (character.type === 'boss_theta') {
-                    // 1. 발사체 반사
-                    if (!character.isReflecting && now - character.lastReflectAll > character.reflectAllCooldown) {
+                    // 1. 발사체 반사 (강화)
+                    if (!character.isReflecting && now - character.lastReflectAll > (character.reflectAllCooldown || 8000)) {
                         character.isReflecting = true;
                         this.createFloatingText(character.x + character.width/2, character.y-20, '발사체 반사!', 'cyan');
-                        setTimeout(() => { character.isReflecting = false; }, character.reflectAllDuration);
+                        setTimeout(() => { character.isReflecting = false; }, character.reflectAllDuration || 3000);
                         character.lastReflectAll = now;
                     }
-                    // 2. 도탄 탄환
-                    if (now - character.lastRicochet > character.ricochetCooldown) {
-                        for (let i = 0; i < character.ricochetCount; i++) {
-                            const angle = Math.random() * Math.PI * 2;
+                    // 2. 도탄 탄환 (강화)
+                    if (now - character.lastRicochet > (character.ricochetCooldown || 6000)) {
+                        for (let i = 0; i < (character.ricochetCount || 6); i++) {
+                            const angle = (Math.PI * 2) * (i / (character.ricochetCount || 6));
                             this.gameState.projectiles.push({
                                 id: Date.now() + Math.random(),
                                 x: character.x + character.width / 2,
                                 y: character.y + character.height / 2,
-                                vx: Math.cos(angle) * 10,
-                                vy: Math.sin(angle) * 10,
-                                radius: 5,
-                                damage: character.damage * 0.7,
-                                life: 120,
+                                vx: Math.cos(angle) * 12,
+                                vy: Math.sin(angle) * 12,
+                                radius: 6,
+                                damage: character.damage * 0.8,
+                                life: 150,
                                 color: character.color,
                                 ownerId: character.id,
-                                bounceCount: 2
+                                bounceCount: 5
                             });
                         }
-                        this.createFloatingText(character.x + character.width/2, character.y-20, '도탄!', 'orange');
+                        this.createFloatingText(character.x + character.width/2, character.y-20, '도탄 탄환!', 'orange');
                         character.lastRicochet = now;
                     }
-                    // 3. 플레이어 위치 추적
-                    if (!character.isTracking && now - character.lastTrack > character.trackCooldown) {
+                    // 3. 플레이어 위치 추적 (강화)
+                    if (!character.isTracking && now - character.lastTrack > (character.trackCooldown || 10000)) {
                         character.isTracking = true;
-                        this.createFloatingText(character.x + character.width/2, character.y-20, '위치 추적!', 'red');
-                        setTimeout(() => { character.isTracking = false; }, character.trackDuration);
+                        this.createFloatingText(character.x + character.width/2, character.y-20, '위치 추적!', 'purple');
+                        // 추적 중에는 플레이어를 향해 빠르게 이동
+                        const trackInterval = setInterval(() => {
+                            if (!character.isTracking) {
+                                clearInterval(trackInterval);
+                                return;
+                            }
+                            const dx = player.x - character.x;
+                            const dy = player.y - character.y;
+                            const angle = Math.atan2(dy, dx);
+                            character.vx += Math.cos(angle) * 2;
+                            character.vy += Math.sin(angle) * 2;
+                        }, 100);
+                        setTimeout(() => { 
+                            character.isTracking = false;
+                            clearInterval(trackInterval);
+                        }, character.trackDuration || 4000);
                         character.lastTrack = now;
+                    }
+                    // 4. 새로운 능력: 시간 역행 (플레이어의 능력을 일시적으로 되돌림)
+                    if (now - character.lastTimeReverse > (character.timeReverseCooldown || 20000)) {
+                        this.createFloatingText(character.x + character.width/2, character.y-20, '시간 역행!', 'purple');
+                        // 플레이어의 능력을 일시적으로 되돌림
+                        const originalSpeed = player.speed;
+                        const originalDamage = player.baseDamage;
+                        player.speed = Math.max(2, player.speed * 0.5);
+                        player.baseDamage = Math.max(5, player.baseDamage * 0.7);
+                        this.createFloatingText(player.x + player.width/2, player.y-20, '능력 약화!', 'red');
+                        setTimeout(() => {
+                            player.speed = originalSpeed;
+                            player.baseDamage = originalDamage;
+                            this.createFloatingText(player.x + player.width/2, player.y-20, '능력 회복!', 'green');
+                        }, 5000);
+                        character.lastTimeReverse = now;
                     }
                 }
             }
@@ -2446,6 +2645,39 @@
                                 // 유령/보스 쉴드 무적 체크
                                 if (enemy.type === 'ghost' && enemy.isInvincible) continue;
                                 if (enemy.type === 'boss_beta' && enemy.isInvincible) continue;
+                                
+                                // 반사 적 반사 체크
+                                if (enemy.type === 'reflector' && Math.random() < (enemy.reflectChance || 0.3)) {
+                                    // 탄환을 반사시킴 (90% 데미지로)
+                                    const reflectedDamage = Math.floor(p.damage * 0.9);
+                                    const angle = Math.atan2(p.vy, p.vx);
+                                    const reflectedAngle = angle + Math.PI + (Math.random() - 0.5) * Math.PI / 2;
+                                    
+                                    this.gameState.projectiles.push({
+                                        id: Date.now() + Math.random(),
+                                        x: enemy.x + enemy.width / 2,
+                                        y: enemy.y + enemy.height / 2,
+                                        vx: Math.cos(reflectedAngle) * 6,
+                                        vy: Math.sin(reflectedAngle) * 6,
+                                        radius: p.radius,
+                                        damage: reflectedDamage,
+                                        life: 60,
+                                        color: '#ff6b6b',
+                                        ownerId: 'enemy',
+                                        pierceCount: 0,
+                                        explosiveRadius: 0,
+                                        bounceCount: 0,
+                                        isHoming: false,
+                                        homingStrength: 0,
+                                        splitCount: 0,
+                                        hitEnemies: []
+                                    });
+                                    
+                                    this.createFloatingText(enemy.x + enemy.width / 2, enemy.y, '반사!', 'orange');
+                                    projectilesToRemove.add(i);
+                                    continue;
+                                }
+                                
                                 enemy.health -= p.damage;
                                 this.createFloatingText(enemy.x + enemy.width / 2, enemy.y, `-${p.damage}`, 'white');
                                 this.createHitParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
@@ -2461,7 +2693,11 @@
                                     this.addScore(enemy.points || 100);
                                     if (Math.random() < 0.4) this.gameState.items.push(this.createItem(enemy.x, enemy.y));
                                     
-
+                                    // 폭발 적 사망 시 폭발
+                                    if (enemy.type === 'exploder') {
+                                        this.createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.explodeRadius || 70, enemy.damage, enemy.id);
+                                        this.createFloatingText(enemy.x + enemy.width/2, enemy.y-20, '폭발!', 'orange');
+                                    }
                                     
                                     this.gameState.enemies = this.gameState.enemies.filter(e => e !== enemy);
                                 }
@@ -2495,6 +2731,16 @@
                                 player.health -= actualDamage;
                                 this.createHitParticles(player.x + player.width / 2, player.y + player.height / 2);
                                 player.lastHitById = p.ownerId;
+                                
+                                // 슬라임병 느려지는 효과
+                                if (p.slowEffect && p.slowDuration) {
+                                    player.speed *= p.slowEffect;
+                                    this.createFloatingText(player.x + player.width / 2, player.y - 30, '느려짐!', 'lightblue');
+                                    setTimeout(() => {
+                                        player.speed = this.ENEMY_TYPES[player.type]?.speed || 5;
+                                    }, p.slowDuration);
+                                }
+                                
                                 if (player.health <= 0) this.gameOver();
                             }
                             projectilesToRemove.add(i);
@@ -3324,6 +3570,43 @@
                         player.ammoRegenAmount = value;
                         this.showMessage(`탄약 재생!`, `5초간 탄약 자동 회복!`, 2000);
                         break;
+                    case 'invincibility':
+                        player.invincibleEndTime = Date.now() + value;
+                        this.showMessage(`무적!`, `${value / 1000}초간 무적 상태!`, 2000);
+                        break;
+                    case 'shield_boost':
+                        player.shieldBoostEndTime = Date.now() + value;
+                        this.showMessage(`쉴드 강화!`, `${value / 1000}초간 피해량 50% 감소!`, 2000);
+                        break;
+                    case 'magnet':
+                        player.magnetEndTime = Date.now() + value;
+                        this.showMessage(`자석 효과!`, `${value / 1000}초간 아이템 자동 수집!`, 2000);
+                        break;
+                    case 'health_regen':
+                        player.healthRegenEndTime = Date.now() + value;
+                        player.lastRegenTick = Date.now();
+                        player.effect = 5;
+                        player.tickInterval = 1000;
+                        this.showMessage(`체력 재생!`, `${value / 1000}초간 체력 자동 회복!`, 2000);
+                        break;
+                    case 'rapid':
+                        player.rapidFireTime = Date.now() + value;
+                        this.showMessage(`연발 모드!`, `${value / 1000}초간 발사 속도 증가!`, 2000);
+                        break;
+                    case 'max_health':
+                        player.maxHealth += value;
+                        player.health = Math.min(player.maxHealth, player.health + value);
+                        this.showMessage(`최대 체력 +${value}!`, '', 1500);
+                        break;
+                    case 'ammo':
+                        player.ammo = Math.min(player.maxAmmo, player.ammo + value);
+                        this.showMessage(`탄약 +${value}!`, '', 1500);
+                        break;
+                    case 'max_ammo':
+                        player.maxAmmo += value;
+                        player.ammo = Math.min(player.maxAmmo, player.ammo + value);
+                        this.showMessage(`최대 탄약 +${value}!`, '', 1500);
+                        break;
                 }
                 this.updateHUD();
             }
@@ -3574,8 +3857,11 @@
                     } else if (character.type === 'berserker' && character.isRaging) {
                         this.ctx.shadowBlur = 20;
                         this.ctx.shadowColor = 'red'; // 광전사 광폭화 시 붉은 글로우
-                    }
-                    else {
+                    } else if (character.type === 'phaser' && character.isPhasing) {
+                        this.ctx.globalAlpha = 0.3; // 페이즈 상태 시 반투명
+                        this.ctx.shadowBlur = 15;
+                        this.ctx.shadowColor = 'rgba(6, 182, 212, 0.8)'; // 시안 글로우
+                    } else {
                         this.ctx.shadowBlur = 15;
                         this.ctx.shadowColor = character.color;
                     }
@@ -3627,6 +3913,17 @@
                             case 'boss_alpha': typeIcon = 'α'; break; // 알파 보스 아이콘
                             case 'boss_beta': typeIcon = 'β'; break; // 베타 보스 아이콘
                             case 'boss_gamma': typeIcon = 'γ'; break; // 감마 보스 아이콘
+                            case 'leech': typeIcon = '🩸'; break; // 흡혈 적
+                            case 'mine': typeIcon = '💣'; break; // 지뢰 적
+                            case 'freezer': typeIcon = '❄️'; break; // 빙결 적
+                            case 'reflector': typeIcon = '🪞'; break; // 반사 적
+                            case 'healer': typeIcon = '💚'; break; // 힐러 적
+                            case 'portal': typeIcon = '🌀'; break; // 포탈 적
+                            case 'exploder': typeIcon = '💥'; break; // 폭발 적
+                            case 'magnet': typeIcon = '🧲'; break; // 자석 적
+                            case 'curse': typeIcon = '👹'; break; // 저주 적
+                            case 'floater': typeIcon = '🦋'; break; // 플로터
+                            case 'phaser': typeIcon = '👻'; break; // 페이저
                             case 'ally': typeIcon = '🤖'; break; // 아군 아이콘
                             default: typeIcon = ''; break;
                         }
@@ -4068,7 +4365,14 @@
                     { name: '치명타 확률', type: 'crit_chance', value: 0.05 },
                     { name: '재사용 대기시간 감소', type: 'cooldown_reduction', value: 0.05 },
                     { name: '방어력', type: 'armor', value: 5 },
-                    { name: '탄약 재생 (5초)', type: 'ammo_regen', value: 5000 }
+                    { name: '탄약 재생 (5초)', type: 'ammo_regen', value: 5000 },
+                    { name: '다중 발사 +1', type: 'multishot', value: 1 },
+                    { name: '공격력 +10', type: 'damage', value: 10 },
+                    { name: '속도 +1', type: 'speed', value: 1 },
+                    { name: '체력 +50', type: 'health', value: 50 },
+                    { name: '최대 체력 +50', type: 'max_health', value: 50 },
+                    { name: '탄약 +10', type: 'ammo', value: 10 },
+                    { name: '최대 탄약 +10', type: 'max_ammo', value: 10 }
                 ];
                 
                 abilities.forEach(ability => {
