@@ -968,8 +968,8 @@
                         height: 40, // 높이
                         vx: 0, // X축 속도
                         vy: 0, // Y축 속도
-                        health: 150, // 현재 체력 (150 -> 200으로 변경)
-                        maxHealth: 150, // 최대 체력 (150 -> 200으로 변경)
+                        health: 200, // 현재 체력 (150 -> 200으로 변경)
+                        maxHealth: 200, // 최대 체력 (150 -> 200으로 변경)
                         ammo: 30, // 현재 탄약 (30발로 고정)
                         maxAmmo: 30, // 최대 탄약 (30발로 고정)
                         speed: 5, // 이동 속도
@@ -1523,9 +1523,7 @@
                     crystal: {
                         name: '크리스탈', health: 70, speed: 1.2, damage: 35, color: '#4361ee', size: 45, shootInterval: 3500, points: 350, crystalShield: true, crystalCooldown: 15000, lastCrystal: 0, crystalDuration: 5000, isCrystalShielded: false // 크리스탈 방패
                     },
-                    shadow: {
-                        name: '섀도우', health: 30, speed: 3.5, damage: 22, color: '#2b2d42', size: 28, shootInterval: 1400, points: 250, shadowClone: true, shadowCooldown: 9000, lastShadow: 0, shadowCount: 2 // 그림자 분신
-                    },
+
                     plasma: {
                         name: '플라즈마', health: 48, speed: 2.1, damage: 28, color: '#06ffa5', size: 34, shootInterval: 1900, points: 270, plasmaChain: true, plasmaChainCount: 4, plasmaChainRange: 150, lastPlasma: 0 // 플라즈마 체인
                     },
@@ -2578,8 +2576,6 @@
                     lastQuantumSplit: 0, // 퀀텀
                     lastCrystal: 0, // 크리스탈
                     lastCrystalShard: 0, // 크리스탈
-                    lastShadow: 0, // 섀도우
-                    lastShadowHide: 0, // 섀도우
                     lastPlasma: 0, // 플라즈마
                     lastPlasmaExplosion: 0, // 플라즈마
                     lastNebula: 0, // 네뷸라
@@ -2988,39 +2984,39 @@
                         if (this.gameState.wave >= 13 && Math.random() < 0.06) type = 'shielded';
                         if (this.gameState.wave >= 14 && Math.random() < 0.06) type = 'teleporter';
                         if (this.gameState.wave >= 15 && Math.random() < 0.06) type = 'drone';
-                        if (this.gameState.wave >= 16 && Math.random() < 0.06) type = 'spitter';
-                        if (this.gameState.wave >= 17 && Math.random() < 0.06) type = 'berserker';
-                        if (this.gameState.wave >= 18 && Math.random() < 0.05) type = 'leech';
-                        if (this.gameState.wave >= 19 && Math.random() < 0.05) type = 'mine';
-                        if (this.gameState.wave >= 20 && Math.random() < 0.05) type = 'freezer';
-                        if (this.gameState.wave >= 21 && Math.random() < 0.05) type = 'reflector';
-                        if (this.gameState.wave >= 22 && Math.random() < 0.05) type = 'healer';
-                        if (this.gameState.wave >= 23 && Math.random() < 0.05) type = 'portal';
-                        if (this.gameState.wave >= 24 && Math.random() < 0.05) type = 'exploder';
-                        if (this.gameState.wave >= 25 && Math.random() < 0.05) type = 'magnet';
-                        if (this.gameState.wave >= 26 && Math.random() < 0.05) type = 'curse';
-                        if (this.gameState.wave >= 27 && Math.random() < 0.05) type = 'floater';
-                        if (this.gameState.wave >= 28 && Math.random() < 0.05) type = 'phaser';
-                        if (this.gameState.wave >= 29 && Math.random() < 0.04) type = 'ninja';
-                        if (this.gameState.wave >= 30 && Math.random() < 0.04) type = 'sniper';
-                        if (this.gameState.wave >= 31 && Math.random() < 0.04) type = 'berserker';
-                        if (this.gameState.wave >= 32 && Math.random() < 0.04) type = 'summoner';
-                        if (this.gameState.wave >= 33 && Math.random() < 0.04) type = 'guardian';
-                        if (this.gameState.wave >= 34 && Math.random() < 0.04) type = 'assassin';
-                        if (this.gameState.wave >= 35 && Math.random() < 0.04) type = 'heavy';
+                        if (this.gameState.wave >= 15 && Math.random() < 0.06) type = 'spitter';
+                        if (this.gameState.wave >= 15 && Math.random() < 0.06) type = 'berserker';
+                        if (this.gameState.wave >= 15 && Math.random() < 0.05) type = 'leech';
+                        if (this.gameState.wave >= 15 && Math.random() < 0.05) type = 'mine';
+                        if (this.gameState.wave >= 15 && Math.random() < 0.05) type = 'freezer';
+                        if (this.gameState.wave >= 15 && Math.random() < 0.05) type = 'reflector';
+                        if (this.gameState.wave >= 16 && Math.random() < 0.05) type = 'healer';
+                        if (this.gameState.wave >= 16 && Math.random() < 0.05) type = 'portal';
+                        if (this.gameState.wave >= 16 && Math.random() < 0.05) type = 'exploder';
+                        if (this.gameState.wave >= 16 && Math.random() < 0.05) type = 'magnet';
+                        if (this.gameState.wave >= 20 && Math.random() < 0.05) type = 'curse';
+                        if (this.gameState.wave >= 20 && Math.random() < 0.05) type = 'floater';
+                        if (this.gameState.wave >= 16 && Math.random() < 0.05) type = 'phaser';
+                        if (this.gameState.wave >= 16 && Math.random() < 0.04) type = 'ninja';
+                        if (this.gameState.wave >= 21 && Math.random() < 0.04) type = 'sniper';
+                        if (this.gameState.wave >= 21 && Math.random() < 0.04) type = 'berserker';
+                        if (this.gameState.wave >= 21 && Math.random() < 0.04) type = 'summoner';
+                        if (this.gameState.wave >= 21 && Math.random() < 0.04) type = 'guardian';
+                        if (this.gameState.wave >= 21 && Math.random() < 0.04) type = 'assassin';
+                        if (this.gameState.wave >= 25 && Math.random() < 0.04) type = 'heavy';
                         if (this.gameState.wave >= 36 && Math.random() < 0.04) type = 'bomber';
-                        if (this.gameState.wave >= 37 && Math.random() < 0.04) type = 'medic';
+                        if (this.gameState.wave >= 32 && Math.random() < 0.04) type = 'medic';
                         if (this.gameState.wave >= 38 && Math.random() < 0.04) type = 'drone';
                         if (this.gameState.wave >= 39 && Math.random() < 0.03) type = 'timekeeper';
-                        if (this.gameState.wave >= 40 && Math.random() < 0.03) type = 'gravity';
-                        if (this.gameState.wave >= 41 && Math.random() < 0.03) type = 'echo';
-                        if (this.gameState.wave >= 42 && Math.random() < 0.03) type = 'vortex';
-                        if (this.gameState.wave >= 43 && Math.random() < 0.03) type = 'prism';
-                        if (this.gameState.wave >= 44 && Math.random() < 0.03) type = 'quantum';
-                        if (this.gameState.wave >= 45 && Math.random() < 0.03) type = 'crystal';
-                        if (this.gameState.wave >= 46 && Math.random() < 0.03) type = 'shadow';
-                        if (this.gameState.wave >= 47 && Math.random() < 0.03) type = 'plasma';
-                        if (this.gameState.wave >= 48 && Math.random() < 0.03) type = 'nebula';
+                        if (this.gameState.wave >= 25 && Math.random() < 0.03) type = 'gravity';
+                        if (this.gameState.wave >= 18 && Math.random() < 0.03) type = 'echo';
+                        if (this.gameState.wave >= 20 && Math.random() < 0.03) type = 'vortex';
+                        if (this.gameState.wave >= 16 && Math.random() < 0.03) type = 'prism';
+                        if (this.gameState.wave >= 16 && Math.random() < 0.03) type = 'quantum';
+                        if (this.gameState.wave >= 18 && Math.random() < 0.03) type = 'crystal';
+                        if (this.gameState.wave >= 17 && Math.random() < 0.03) type = 'shadow';
+                        if (this.gameState.wave >= 20 && Math.random() < 0.03) type = 'plasma';
+                        if (this.gameState.wave >= 16 && Math.random() < 0.03) type = 'nebula';
                         this.gameState.enemies.push(this.createEnemy(type));
                     }, i * 500);
                 }
@@ -3356,7 +3352,7 @@
                         character.facing = Math.atan2(dy, dx);
                     }
                     // 기본 발사 (플레이어 향해) - 새로운 적 10종은 제외
-                    const newEnemyTypes = ['timekeeper', 'gravity', 'echo', 'vortex', 'prism', 'quantum', 'crystal', 'shadow', 'plasma', 'nebula'];
+                    const newEnemyTypes = ['timekeeper', 'gravity', 'echo', 'vortex', 'prism', 'quantum', 'crystal', 'plasma', 'nebula'];
                     if (!newEnemyTypes.includes(character.type) && distance < 700 && now - character.lastShot > character.shootInterval * this.gameState.timeSlowEffect) {
                         const angle = Math.atan2(dy, dx);
                         this.gameState.projectiles.push({
@@ -3968,39 +3964,7 @@
                     }
                 }
 
-                // 섀도우: 스킬1 - 그림자 분신, 스킬2 - 그림자 숨기기
-                if (character.type === 'shadow') {
-                    // 스킬1: 그림자 분신 (9초 쿨)
-                    if (now - character.lastShadow > (character.shadowCooldown || 9000)) {
-                        for (let i = 0; i < 2; i++) {
-                            const shadowX = character.x + (Math.random() - 0.5) * 100;
-                            const shadowY = character.y + (Math.random() - 0.5) * 100;
-                            const shadow = {
-                                ...character,
-                                id: Date.now() + Math.random(),
-                                x: shadowX,
-                                y: shadowY,
-                                health: character.health * 0.5,
-                                maxHealth: character.maxHealth * 0.5,
-                                isShadow: true
-                            };
-                            this.gameState.enemies.push(shadow);
-                        }
-                        this.createFloatingText(character.x + character.width/2, character.y-20, '섀도우!', '#2b2d42');
-                        character.lastShadow = now;
-                    }
-                    // 스킬2: 그림자 숨기기 (6초 쿨)
-                    if (now - character.lastShadowHide > (character.shadowHideCooldown || 6000)) {
-                        character.isShadowHidden = true;
-                        character.globalAlpha = 0.3;
-                        this.createFloatingText(character.x + character.width/2, character.y-20, '숨기기!', '#2b2d42');
-                        setTimeout(() => {
-                            character.isShadowHidden = false;
-                            character.globalAlpha = 1;
-                        }, 3000);
-                        character.lastShadowHide = now;
-                    }
-                }
+
 
                 // 플라즈마: 스킬1 - 플라즈마 체인, 스킬2 - 플라즈마 폭발
                 if (character.type === 'plasma') {
