@@ -405,7 +405,6 @@
                 <!-- 1. HUD에 XP와 상점 버튼 추가 -->
                 <span id="xpText" style="margin-left:18px; color:#ffe066; font-size:1.1em; font-weight:600;"></span>
                 <button id="shopButton" style="margin-left:12px; font-size:1em; border-radius:6px; border:none; background:#ffe066; color:#222; padding:4px 16px; cursor:pointer;">상점</button>
-                <button id="testZoneButton" style="margin-left:12px; font-size:1em; border-radius:6px; border:none; background:#ff6b6b; color:#fff; padding:4px 16px; cursor:pointer;">테스트 존</button>
             </div>
         </div>
     </div>
@@ -453,11 +452,12 @@
         <button id="closeQuestButton" style="margin-top:18px;">닫기</button>
     </div>
 
-    <!-- 인트로 화면: 솔로/함께 플레이 선택 -->
-    <div id="introScreen" class="glass-card" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:340px; min-height:220px;">
+    <!-- 인트로 화면: 솔로/함께 플레이/테스팅 존 선택 -->
+    <div id="introScreen" class="glass-card" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:340px; min-height:280px;">
         <h1 style="font-size:2.5em; margin-bottom:18px;">글래스 컴뱃 아레나</h1>
         <button id="soloButton" style="margin:10px 0; padding:14px 36px; font-size:1.2em; border-radius:10px; border:none; background:#6366f1; color:white; cursor:pointer;">솔로 플레이</button>
         <button id="multiButton" style="margin:10px 0; padding:14px 36px; font-size:1.2em; border-radius:10px; border:none; background:#22c55e; color:white; cursor:pointer;">함께 플레이</button>
+        <button id="testZoneButton" style="margin:10px 0; padding:14px 36px; font-size:1.2em; border-radius:10px; border:none; background:#ff6b6b; color:white; cursor:pointer;">테스팅 존</button>
         <div id="multiInfo" style="display:none; color:#fff; margin-top:18px; font-size:1.1em;">함께 플레이(온라인)는 추후 지원 예정입니다.</div>
     </div>
 
@@ -489,21 +489,28 @@
     </div>
 
     <!-- 3. 테스트 존 UI 추가 -->
-    <div id="testZonePopup" class="glass-card" style="display:none; position:fixed; top:80px; left:50%; transform:translateX(-50%); z-index:200; min-width:600px; min-height:400px;">
+    <div id="testZonePopup" class="glass-card" style="display:none; position:fixed; top:80px; left:50%; transform:translateX(-50%); z-index:200; min-width:800px; min-height:500px;">
         <h2 style="color:#222; margin-bottom:12px;">테스트 존</h2>
-        <div style="display:flex; gap:20px;">
+        <div style="display:flex; gap:20px; flex-wrap:wrap;">
             <!-- 적 소환 패널 -->
-            <div style="flex:1;">
+            <div style="flex:1; min-width:200px;">
                 <h3 style="color:#222; margin-bottom:8px;">적 소환</h3>
-                <div id="enemySpawnList" style="color:#222; font-size:14px; max-height:300px; overflow-y:auto;"></div>
+                <div id="enemySpawnList" style="color:#222; font-size:14px; max-height:200px; overflow-y:auto;"></div>
             </div>
             <!-- 보스 소환 패널 -->
-            <div style="flex:1;">
+            <div style="flex:1; min-width:200px;">
                 <h3 style="color:#222; margin-bottom:8px;">보스 소환</h3>
-                <div id="bossSpawnList" style="color:#222; font-size:14px; max-height:300px; overflow-y:auto;"></div>
+                <div id="bossSpawnList" style="color:#222; font-size:14px; max-height:200px; overflow-y:auto;"></div>
+            </div>
+            <!-- 능력 부여 패널 -->
+            <div style="flex:1; min-width:200px;">
+                <h3 style="color:#222; margin-bottom:8px;">능력 부여</h3>
+                <div id="abilityList" style="color:#222; font-size:14px; max-height:200px; overflow-y:auto;"></div>
             </div>
         </div>
-        <button id="closeTestZoneButton" style="margin-top:18px;">닫기</button>
+        <div style="display:flex; gap:10px; margin-top:18px;">
+            <button id="returnToMenuButton" style="background:#ff6b6b; color:#fff;">메인 메뉴</button>
+        </div>
     </div>
 
     <script>
@@ -930,6 +937,7 @@
                     if (e.key.toLowerCase() === 'e') this.tryDash();
                     if (e.key === '1') this.currentWeapon = 'gun';
                     if (e.key === '2') this.currentWeapon = 'melee';
+                    if (e.key.toLowerCase() === 'r') this.reload(); // R키로 재장전
                 });
                 
                 document.addEventListener('keyup', (e) => {
@@ -969,6 +977,100 @@
                 document.querySelector('.hud').style.display = 'none'; // HUD 숨김
                 document.getElementById('startScreen').style.display = 'flex'; // 시작 화면 표시
                 document.getElementById('rewardSelectionScreen').style.display = 'none'; // 보상 화면 숨김
+            }
+
+            // 테스팅 존 시작
+            startTestZone = () => {
+                this.canvas.style.filter = 'blur(0px)'; // 캔버스 블러 제거
+                document.getElementById('introScreen').style.display = 'none'; // 인트로 화면 숨김
+                document.querySelector('.hud').style.display = 'flex'; // HUD 표시
+                document.getElementById('rewardSelectionScreen').style.display = 'none'; // 보상 화면 숨김
+
+                // 게임 상태 초기화 (테스팅 존용)
+                this.gameState = {
+                    player: {
+                        x: this.canvas.width / 2, y: this.canvas.height / 2,
+                        width: 40, height: 40,
+                        vx: 0, vy: 0,
+                        health: 150, maxHealth: 150,
+                        ammo: 30, maxAmmo: 30,
+                        speed: 5, jumpPower: 15,
+                        onGround: false, facing: 0,
+                        expression: this.getRandomExpression(),
+                        color: '#6366f1',
+                        baseDamage: 10,
+                        multishot: 1,
+                        rapidFireTime: 0,
+                        damageReductionFactor: 1,
+                        shieldBoostEndTime: 0,
+                        healthRegenEndTime: 0,
+                        lastRegenTick: 0,
+                        magnetEndTime: 0,
+                        magnetRadius: 200,
+                        lastHitById: null,
+                        type: 'player',
+                        orbitingKnives: [],
+                        piercingShot: 0,
+                        explosiveShot: 0,
+                        ricochetLevel: 0,
+                        homingLevel: 0,
+                        splitLevel: 0,
+                        lifeStealPercent: 0,
+                        critChance: 0,
+                        critMultiplier: 1.5,
+                        cooldownReduction: 0,
+                        armor: 0,
+                        timeStopEndTime: 0,
+                        ammoRegenEndTime: 0,
+                        lastAmmoRegenTick: 0,
+                        ammoRegenAmount: 0,
+                        dashCooldown: 0,
+                        dashEndTime: 0,
+                        isDashing: false,
+                        reloadTime: 1500,
+                        isReloading: false,
+                        machineGunMode: false,
+                        machineGunPenalty: false,
+                        reloadPenalty: 0,
+                        gunRecoil: 0,
+                        gunRecoilTarget: 0,
+                    },
+                    enemies: [],
+                    projectiles: [],
+                    items: [],
+                    particles: [],
+                    floatingTexts: [],
+                    allies: [],
+                    score: 0,
+                    wave: 1,
+                    gameStatus: 'playing',
+                    message: '',
+                    messageTimer: 0,
+                    playerSlowedEndTime: 0,
+                    timeSlowEndTime: 0,
+                    timeSlowEffect: 1
+                };
+                
+                // 보스 시스템 초기화
+                this.bossSystem = {
+                    isActive: false,
+                    currentBoss: null,
+                    spawnLock: false
+                };
+                
+                // 게임 모드 설정 (테스팅 존)
+                this.gameMode = 'testzone';
+                
+                // 테스팅 존 UI 표시
+                document.getElementById('testZonePopup').style.display = 'block';
+                this.updateTestZone();
+                
+                this.gameLoop(); // 게임 루프 시작
+                this.updateHUD(); // HUD 초기 업데이트
+                this.hideMessage(); // 메시지 숨기기
+
+                this.currentWeapon = 'gun';
+                this.upgrades = { gun: 0, melee: 0, health: 0, speed: 0, cooldown: 0 };
             }
 
             // 게임 시작
@@ -1058,6 +1160,9 @@
                     currentBoss: null,
                     spawnLock: false
                 };
+                
+                // 게임 모드 설정 (솔로 플레이)
+                this.gameMode = 'solo';
             }
             
             // 무작위 표정 반환
@@ -1455,6 +1560,9 @@
                     } else {
                         player.ammo--;
                     }
+                    // 총 반동 효과 추가
+                    player.gunRecoilTarget = 15; // 반동 목표값 설정
+                    
                     player.lastShot = now;
                     this.updateHUD();
                 } else if (this.currentWeapon === 'melee') {
@@ -1493,15 +1601,20 @@
             reload = () => {
                 const player = this.gameState.player;
                 if (player.isReloading) return;
+                if (player.ammo >= player.maxAmmo) return; // 이미 가득 찬 경우 재장전 안함
+                
                 player.isReloading = true;
                 player.gunRecoilTarget = 18;
                 let reloadTime = player.reloadTime + player.reloadPenalty;
                 this.showMessage('재장전 중...', '', reloadTime);
+                
+                // 재장전 중에는 발사 불가
                 setTimeout(() => {
                     player.ammo = player.maxAmmo;
                     player.isReloading = false;
                     player.gunRecoilTarget = 0;
                     this.updateHUD();
+                    this.showMessage('재장전 완료!', '', 1000);
                 }, reloadTime);
             }
             
@@ -1540,6 +1653,9 @@
             // 웨이브 생성 (새로운 보스 시스템)
             spawnInitialWave = () => {
                 if (this.gameState.gameStatus !== 'spawning') return;
+                
+                // 테스팅 존에서는 자동 소환 안함
+                if (this.gameMode === 'testzone') return;
                 
                 // 보스 웨이브 체크 (10의 배수)
                 if (this.gameState.wave % 10 === 0) {
@@ -2823,6 +2939,9 @@
             
             // 웨이브 완료 체크 (새로운 보스 시스템)
             checkWaveComplete = () => {
+                // 테스팅 존에서는 웨이브 완료 체크 안함
+                if (this.gameMode === 'testzone') return;
+                
                 // 보스 웨이브 완료 체크
                 if (this.gameState.wave % 10 === 0) {
                     this.checkBossWaveComplete();
@@ -3222,7 +3341,15 @@
                 // 탄약 바 업데이트
                 const ammoPercent = (player.ammo / player.maxAmmo) * 100;
                 document.getElementById('ammoFill').style.width = ammoPercent + '%';
-                document.getElementById('ammoText').textContent = `${player.ammo.toFixed(0)}/${player.maxAmmo.toFixed(0)}`;
+                
+                // 재장전 중일 때는 다른 색상으로 표시
+                if (player.isReloading) {
+                    document.getElementById('ammoFill').style.background = 'linear-gradient(90deg, #ff6b6b, #ff8e8e)';
+                    document.getElementById('ammoText').textContent = '재장전 중...';
+                } else {
+                    document.getElementById('ammoFill').style.background = 'linear-gradient(90deg, #3b82f6, #60a5fa)';
+                    document.getElementById('ammoText').textContent = `${player.ammo.toFixed(0)}/${player.maxAmmo.toFixed(0)}`;
+                }
                 
                 // 점수 및 웨이브 업데이트
                 document.getElementById('scoreText').textContent = this.gameState.score.toLocaleString();
@@ -3301,8 +3428,16 @@
                     bossBarContainer.style.display = 'none';
                 }
                 
-                // 5. updateHUD에 XP 표시 추가
-                document.getElementById('xpText').textContent = `XP: ${this.xp}`;
+                // 5. updateHUD에 XP/점수 표시 추가 (테스팅 존에서는 점수만)
+                if (this.gameMode === 'testzone') {
+                    document.getElementById('xpText').textContent = `점수: ${this.gameState.score}`;
+                    // 테스팅 존에서는 상점 버튼 숨기기
+                    document.getElementById('shopButton').style.display = 'none';
+                } else {
+                    document.getElementById('xpText').textContent = `XP: ${this.xp}`;
+                    // 솔로 플레이에서는 상점 버튼 보이기
+                    document.getElementById('shopButton').style.display = 'inline-block';
+                }
             }
             
             // 미니맵 업데이트 (플레이어, 적, 아이템 위치 표시)
@@ -3403,14 +3538,17 @@
                     this.ctx.textBaseline = 'middle';
                     this.ctx.fillText(character.expression, 0, 0); // 새로운 원점(0,0)에 그리기
 
-                    // 플레이어 총 이모지 그리기 (항상 왼손에 고정)
+                    // 플레이어 총 이모지 그리기 (반동 효과 포함)
                     this.ctx.font = '20px Poppins'; // 총 이모지 크기
                     this.ctx.fillStyle = 'black'; // 총 색상 검정색으로 변경
                     
-                    // 총 이모지를 플레이어의 왼쪽 (캐릭터 중심 기준 왼쪽)에 고정
+                    // 총 반동 효과 적용
+                    const recoilOffset = character.gunRecoil || 0;
+                    
+                    // 총 이모지를 플레이어의 왼쪽 (캐릭터 중심 기준 왼쪽)에 고정 + 반동
                     const gunOffsetX = -character.width / 2 - 10; // 캐릭터 왼쪽 끝에서 10px 더 왼쪽
                     const weaponEmoji = (this.currentWeapon === 'melee') ? '🔪' : '🔫';
-                    this.ctx.fillText(weaponEmoji, gunOffsetX, 0); // 계산된 오프셋에 총 그리기
+                    this.ctx.fillText(weaponEmoji, gunOffsetX, recoilOffset); // 반동 오프셋 적용
 
                 } else {
                     // 비-플레이어 캐릭터 (적, 아군) 그리기 (변환 없음)
@@ -3744,6 +3882,9 @@
             addScore = (amount) => {
                 this.gameState.score += amount;
                 this.updateHUD();
+                // 테스팅 존에서는 보상 선택 안함
+                if (this.gameMode === 'testzone') return;
+                
                 while (this.nextMilestoneIndex < this.scoreMilestones.length && this.gameState.score >= this.scoreMilestones[this.nextMilestoneIndex]) {
                     this.pauseGameForReward();
                     this.nextMilestoneIndex++;
@@ -3804,13 +3945,24 @@
                 });
             };
 
+            // 메인 메뉴로 돌아가기
+            returnToMainMenu = () => {
+                this.canvas.style.filter = 'blur(10px)';
+                document.querySelector('.hud').style.display = 'none';
+                document.getElementById('testZonePopup').style.display = 'none';
+                document.getElementById('introScreen').style.display = 'flex';
+                this.gameState.gameStatus = 'start';
+            }
+
             // 테스트 존 업데이트
             updateTestZone = () => {
                 const enemySpawnList = document.getElementById('enemySpawnList');
                 const bossSpawnList = document.getElementById('bossSpawnList');
+                const abilityList = document.getElementById('abilityList');
                 
                 enemySpawnList.innerHTML = '';
                 bossSpawnList.innerHTML = '';
+                abilityList.innerHTML = '';
                 
                 // 적 소환 목록 생성
                 Object.entries(this.ENEMY_TYPES).forEach(([type, data]) => {
@@ -3894,6 +4046,62 @@
                         bossSpawnList.appendChild(bossDiv);
                     }
                 });
+                
+                // 능력 부여 목록 생성
+                const abilities = [
+                    { name: '무적 (5초)', type: 'invincibility', value: 5000 },
+                    { name: '쉴드 강화 (10초)', type: 'shield_boost', value: 10000 },
+                    { name: '시간 정지 (3초)', type: 'time_stop', value: 3000 },
+                    { name: '자석 효과 (8초)', type: 'magnet', value: 8000 },
+                    { name: '체력 재생 (10초)', type: 'health_regen', value: 10000 },
+                    { name: '연발 모드 (5초)', type: 'rapid', value: 5000 },
+                    { name: '관통 사격', type: 'piercing_shot', value: 1 },
+                    { name: '폭발 사격', type: 'explosive_shot', value: 1 },
+                    { name: '회전 칼날', type: 'orbiting_knife', value: 1 },
+                    { name: '도탄 사격', type: 'ricochet_shot', value: 1 },
+                    { name: '유도 사격', type: 'homing_shot', value: 1 },
+                    { name: '분열 사격', type: 'split_shot', value: 1 },
+                    { name: '생명력 흡수', type: 'life_steal', value: 0.05 },
+                    { name: '치명타 확률', type: 'crit_chance', value: 0.05 },
+                    { name: '재사용 대기시간 감소', type: 'cooldown_reduction', value: 0.05 },
+                    { name: '방어력', type: 'armor', value: 5 },
+                    { name: '탄약 재생 (5초)', type: 'ammo_regen', value: 5000 }
+                ];
+                
+                abilities.forEach(ability => {
+                    const abilityDiv = document.createElement('div');
+                    abilityDiv.style.display = 'flex';
+                    abilityDiv.style.justifyContent = 'space-between';
+                    abilityDiv.style.alignItems = 'center';
+                    abilityDiv.style.margin = '8px 0';
+                    abilityDiv.style.padding = '8px';
+                    abilityDiv.style.background = 'rgba(255,255,255,0.1)';
+                    abilityDiv.style.borderRadius = '6px';
+                    abilityDiv.style.color = '#222';
+                    
+                    const label = document.createElement('span');
+                    label.textContent = ability.name;
+                    label.style.fontSize = '14px';
+                    
+                    const applyBtn = document.createElement('button');
+                    applyBtn.textContent = '부여';
+                    applyBtn.style.background = '#6366f1';
+                    applyBtn.style.color = '#fff';
+                    applyBtn.style.border = 'none';
+                    applyBtn.style.borderRadius = '4px';
+                    applyBtn.style.padding = '4px 12px';
+                    applyBtn.style.cursor = 'pointer';
+                    applyBtn.style.fontSize = '12px';
+                    
+                    applyBtn.onclick = () => {
+                        this.applyReward(ability.type, ability.value);
+                        this.showMessage(`${ability.name} 부여!`, '', 1500);
+                    };
+                    
+                    abilityDiv.appendChild(label);
+                    abilityDiv.appendChild(applyBtn);
+                    abilityList.appendChild(abilityDiv);
+                });
             };
         }
 
@@ -3914,21 +4122,35 @@
           document.getElementById('multiButton').onclick = function() {
             document.getElementById('multiInfo').style.display = 'block';
           };
-          // 상점 열기/닫기 이벤트 리스너
-          document.getElementById('shopButton').onclick = function() {
-            document.getElementById('shopPopup').style.display = 'block';
-            window.game.updateShopList();
-          };
-          document.getElementById('closeShopButton').onclick = function() {
-            document.getElementById('shopPopup').style.display = 'none';
-          };
-          // 테스트 존 열기/닫기 이벤트 리스너
+          // 테스팅 존 버튼 이벤트 리스너
           document.getElementById('testZoneButton').onclick = function() {
-            document.getElementById('testZonePopup').style.display = 'block';
-            window.game.updateTestZone();
+            document.getElementById('introScreen').style.display = 'none';
+            if (window.game && typeof window.game.startTestZone === 'function') {
+              window.game.startTestZone();
+            }
           };
-          document.getElementById('closeTestZoneButton').onclick = function() {
-            document.getElementById('testZonePopup').style.display = 'none';
+          // 상점 토글 이벤트 리스너
+          document.getElementById('shopButton').onclick = function() {
+            const shopPopup = document.getElementById('shopPopup');
+            if (shopPopup.style.display === 'block') {
+              shopPopup.style.display = 'none';
+            } else {
+              shopPopup.style.display = 'block';
+              window.game.updateShopList();
+            }
+          };
+          // 테스트 존 토글 이벤트 리스너
+          document.getElementById('testZoneButton').onclick = function() {
+            const testZonePopup = document.getElementById('testZonePopup');
+            if (testZonePopup.style.display === 'block') {
+              testZonePopup.style.display = 'none';
+            } else {
+              testZonePopup.style.display = 'block';
+              window.game.updateTestZone();
+            }
+          };
+          document.getElementById('returnToMenuButton').onclick = function() {
+            window.game.returnToMainMenu();
           };
           // 퀘스트 버튼 열기
           document.getElementById('questButton').onclick = function() {
