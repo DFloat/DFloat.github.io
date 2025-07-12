@@ -2714,6 +2714,7 @@
                                         this.bossSystem.currentBoss = null;
                                     }
                                     this.resetBossSystem();
+                                    this.checkBossWaveComplete();
                                 }
                                 
                                 this.gameState.enemies = this.gameState.enemies.filter(e => e !== enemy);
