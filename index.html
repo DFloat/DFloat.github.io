@@ -3760,7 +3760,7 @@
                 for (let i = 0; i < this.gameState.projectiles.length; i++) {
                     const p = this.gameState.projectiles[i];
                     // Only enemy bullets (not player, player2, ally, or any player-owned projectiles) can hit the player
-                    if (p.ownerId && p.ownerId !== 'player' && p.ownerId !== 'player2' && p.ownerId !== 'ally' && !p.ownerId.startsWith('player')) {
+                    if (p.ownerId && p.ownerId !== 'player' && p.ownerId !== 'player2' && p.ownerId !== 'ally' && typeof p.ownerId === 'string' && !p.ownerId.startsWith('player')) {
                         // 플레이어1 충돌 체크
                         const dx = p.x - (player.x + player.width / 2);
                         const dy = p.y - (player.y + player.height / 2);
