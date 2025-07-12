@@ -1818,25 +1818,24 @@
                 
                 // 발사체 생성
                 const projectile = {
+                    id: Date.now() + Math.random(),
                     x: player2.x + Math.cos(angle) * 25,
                     y: player2.y + Math.sin(angle) * 25,
                     vx: Math.cos(angle) * 8,
                     vy: Math.sin(angle) * 8,
-                    width: 6,
-                    height: 6,
+                    radius: 3,
                     damage: player2.baseDamage,
-                    type: 'player2',
-                    owner: player2,
-                    piercing: player2.piercingShot > 0,
-                    piercingCount: player2.piercingShot,
-                    explosive: player2.explosiveShot > 0,
-                    explosiveLevel: player2.explosiveShot,
-                    ricochetLevel: player2.ricochetLevel,
-                    homingLevel: player2.homingLevel,
-                    splitLevel: player2.splitLevel,
-                    lifeStealPercent: player2.lifeStealPercent,
-                    critChance: player2.critChance,
-                    critMultiplier: player2.critMultiplier
+                    life: 80,
+                    color: player2.color || '#ff6b6b',
+                    ownerId: 'player2',
+                    pierceCount: player2.piercingShot || 0,
+                    explosiveRadius: player2.explosiveShot || 0,
+                    bounceCount: 0,
+                    isHoming: player2.homingLevel > 0,
+                    homingStrength: player2.homingLevel * 0.05 || 0,
+                    splitCount: player2.splitLevel || 0,
+                    hitEnemies: [],
+                    isCritical: Math.random() < (player2.critChance || 0)
                 };
                 
                 this.gameState.projectiles.push(projectile);
@@ -1847,6 +1846,7 @@
                         const spreadAngle = angle + (i - (player2.multishot - 1) / 2) * 0.2;
                         const spreadProjectile = {
                             ...projectile,
+                            id: Date.now() + Math.random(),
                             x: player2.x + Math.cos(spreadAngle) * 25,
                             y: player2.y + Math.sin(spreadAngle) * 25,
                             vx: Math.cos(spreadAngle) * 8,
@@ -1862,6 +1862,7 @@
                         const splitAngle = angle + (i + 1) * (Math.PI / (player2.splitLevel + 1));
                         const splitProjectile = {
                             ...projectile,
+                            id: Date.now() + Math.random(),
                             x: player2.x + Math.cos(splitAngle) * 25,
                             y: player2.y + Math.sin(splitAngle) * 25,
                             vx: Math.cos(splitAngle) * 8,
