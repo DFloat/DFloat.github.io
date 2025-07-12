@@ -340,6 +340,348 @@
         };
     </style>
 </head>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>글래스 컴뱃 아레나</title>
+    <meta name="description" content="2D 브라우저 기반 전투 게임 - 중력 물리학, 글래스모피즘 UI, 봇 전투 시스템">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 전역 CSS 재설정 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* body 스타일: 폰트, 배경, 오버플로우 숨김, 전체 화면 */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* 게임 캔버스 스타일: 절대 위치, 커서, 배경, 블러 전환 효과 */
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* 캔버스 배경도 동일하게 설정 */
+            filter: blur(10px); /* 초기 블러 효과 */
+            transition: filter 0.5s ease; /* 블러 전환 애니메이션 */
+            display: block; /* 항상 보이도록 설정 */
+        }
+        
+        /* 글래스 카드 스타일: 배경 흐림, 테두리, 그림자 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            color: #fff;
+        }
+        
+        /* HUD (Head-Up Display) 스타일: 왼쪽 상단 고정, flexbox로 내부 요소 정렬 */
+        .hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+            flex-direction: row;
+            gap: 18px;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 12px 0 0 0;
+        }
+        
+        /* HUD 내부 아이템 스타일: 상호작용 가능 */
+        .hud-item {
+            pointer-events: auto;
+            margin: 0 4px;
+            min-width: 170px;
+            max-width: 260px;
+        }
+        
+        /* 체력/탄약 바 스타일 */
+        .health-bar, .ammo-bar {
+            width: 150px;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        
+        /* 체력 바 채우기 스타일: 그라데이션, 너비 전환 효과 */
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444, #f87171);
+            transition: width 0.3s ease;
+        }
+        
+        /* 탄약 바 채우기 스타일: 그라데이션, 너비 전환 효과 */
+        .ammo-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            transition: width 0.3s ease;
+        }
+        
+        /* 스탯 텍스트 스타일 */
+        .stats {
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* 점수 텍스트 스타일 */
+        .score {
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        /* 웨이브 텍스트 스타일 */
+        .wave {
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 8px;
+        }
+        
+        /* 조작법 텍스트 스타일 */
+        .controls {
+            color: white;
+            font-size: 12px;
+        }
+        
+        /* 조작 키 표시 스타일 */
+        .control-key {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 2px;
+            display: inline-block;
+        }
+        
+        /* 게임 메시지 컨테이너 스타일 */
+        .message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+        }
+        
+        /* 게임 메시지 주 텍스트 스타일 */
+        .message-text {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* 게임 메시지 보조 텍스트 스타일 */
+        .message-sub {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 18px;
+            text-align: center;
+            margin-top: 8px;
+        }
+        
+        /* 깜빡임 애니메이션 */
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* 미니맵 스타일 */
+        .minimap {
+            width: 120px;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* 미니맵 플레이어 도트 스타일 */
+        .minimap-player {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #3b82f6;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        /* 미니맵 적 도트 스타일 */
+        .minimap-enemy {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #ef4444;
+            border-radius: 50%;
+        }
+        
+        /* 미니맵 아이템 도트 스타일 */
+        .minimap-item {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #fbbf24;
+            border-radius: 50%;
+        }
+
+        /* 시작 화면 스타일 */
+        #startScreen {
+            position: absolute; /* 캔버스 위에 오버레이 */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 101; /* HUD보다 높게 설정 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            padding: 40px;
+        }
+
+        #startScreen h1 {
+            font-size: 4em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(255,255,255,0.5);
+        }
+
+        #startScreen p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
+        #startButton {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px 30px;
+            font-size: 1.5em;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #startButton:hover {
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        #startButton:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 보상 선택 화면 스타일 */
+        #rewardSelectionScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200; /* 가장 위에 표시 */
+            display: none; /* 초기에는 숨김 */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            padding: 30px;
+        }
+
+        #rewardSelectionScreen h2 {
+            font-size: 2.5em;
+            margin-bottom: 25px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.4);
+        }
+
+        .reward-options {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap; /* 작은 화면에서 줄바꿈 */
+            justify-content: center;
+        }
+
+        .reward-button {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            padding: 20px 25px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            min-width: 180px;
+        }
+
+        .reward-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+            transform: translateY(-3px);
+        }
+
+        .reward-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        #shopPopup h2 {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        #shopList {
+            color: #fff;
+            font-weight: normal;
+        }
+
+        /* --- 2. 상점 UI/로직: 점수로 패시브 업그레이드 구매 --- */
+        /* 1) 상점에 표시할 아이템 목록 및 가격 설정 (보상 목록과 동일, 가격은 예시) */
+
+        /* 2) 상점 UI에 아이템 표시 및 구매 로직 구현 */
+
+        /* 3) 상점 버튼 클릭 시 updateShopList 호출 */
+        document.getElementById('shopButton').onclick = () => {
+            document.getElementById('shopPopup').style.display = 'block';
+            this.updateShopList();
+        };
+    </style>
+</head>
 <body>
     <canvas id="gameCanvas"></canvas>
     
@@ -409,6 +751,25 @@
             </div>
         </div>
     </div>
+    
+    <!-- 플레이어2 HUD (멀티플레이 모드에서만 표시) -->
+    <div id="player2HUD" class="glass-card hud-item" style="display:none; position:fixed; top:24px; right:24px; z-index:20; flex-direction:row; align-items:center; gap:22px; min-width:unset; max-width:unset;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+                <div style="width:8px; height:8px; background:#ef4444; border-radius:50%; animation:pulse 2s infinite;"></div>
+                <span style="color:#fff;">P2 체력</span>
+                <div class="health-bar" style="width:70px; margin:0 4px;"><div class="health-fill" id="healthFill2" style="width:100%;"></div></div>
+                <span id="healthText2" style="color:#fff;">100/100</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; margin-left:16px;">
+                <div style="width:8px; height:8px; background:#ef4444; border-radius:50%; animation:pulse 2s infinite;"></div>
+                <span style="color:#fff;">P2 탄약</span>
+                <div class="ammo-bar" style="width:70px; margin:0 4px;"><div class="ammo-fill" id="ammoFill2" style="width:100%;"></div></div>
+                <span id="ammoText2" style="color:#fff;">60/60</span>
+            </div>
+        </div>
+    </div>
+    
     <!-- 나머지 HUD(웨이브, 조작법, 미니맵 등)는 아래/오른쪽 등 별도 배치 필요시 추가 -->
     
     <!-- 게임 메시지 -->
@@ -460,6 +821,80 @@
         <button id="multiButton" style="margin:10px 0; padding:14px 36px; font-size:1.2em; border-radius:10px; border:none; background:#22c55e; color:white; cursor:pointer;">함께 플레이</button>
         <button id="testZoneButton" style="margin:10px 0; padding:14px 36px; font-size:1.2em; border-radius:10px; border:none; background:#ff6b6b; color:white; cursor:pointer;">테스팅 존</button>
         <div id="multiInfo" style="display:none; color:#fff; margin-top:18px; font-size:1.1em;">함께 플레이(온라인)는 추후 지원 예정입니다.</div>
+    </div>
+
+    <!-- 멀티플레이 모드 선택 -->
+    <div id="multiplayerModeSelect" class="glass-card" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:200; min-width:400px;">
+        <h2 style="text-align:center; margin-bottom:20px; color:#fff;">멀티플레이 모드 선택</h2>
+        <div style="display:flex; flex-direction:column; gap:15px;">
+            <button id="leaderSystemButton" class="mode-button" style="background:rgba(99, 102, 241, 0.8); border:none; border-radius:8px; padding:15px; color:#fff; cursor:pointer; text-align:left;">
+                <h3 style="margin:0 0 8px 0;">리더 시스템</h3>
+                <p style="margin:0; font-size:14px; opacity:0.9;">플레이어1이 리더가 되어 조준 방향을 결정하고, 플레이어2가 따라갑니다.</p>
+            </button>
+            <button id="hybridSystemButton" class="mode-button" style="background:rgba(34, 197, 94, 0.8); border:none; border-radius:8px; padding:15px; color:#fff; cursor:pointer; text-align:left;">
+                <h3 style="margin:0 0 8px 0;">하이브리드 시스템</h3>
+                <p style="margin:0; font-size:14px; opacity:0.9;">플레이어1은 마우스 조준, 플레이어2는 자동 조준으로 플레이합니다.</p>
+            </button>
+            <button id="backToIntro" class="back-button" style="background:rgba(255,255,255,0.2); border:none; border-radius:6px; padding:10px; color:#fff; cursor:pointer;">← 뒤로가기</button>
+        </div>
+    </div>
+
+    <!-- 리더 시스템 설정 -->
+    <div id="leaderSetup" class="glass-card" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:200; min-width:400px;">
+        <h2 style="text-align:center; margin-bottom:20px; color:#fff;">리더 시스템 설정</h2>
+        <div style="display:flex; flex-direction:column; gap:15px;">
+            <div>
+                <label style="color:#fff; display:block; margin-bottom:5px;">리더 이름:</label>
+                <input id="leaderName" type="text" placeholder="리더" style="width:100%; padding:8px; border-radius:4px; border:none;">
+            </div>
+            <div>
+                <label style="color:#fff; display:block; margin-bottom:5px;">리더 색상:</label>
+                <input id="leaderColor" type="color" value="#3b82f6" style="width:100%; height:40px; border:none; border-radius:4px;">
+            </div>
+            <div>
+                <label style="color:#fff; display:block; margin-bottom:5px;">따르는자 이름:</label>
+                <input id="followerName" type="text" placeholder="따르는자" style="width:100%; padding:8px; border-radius:4px; border:none;">
+            </div>
+            <div>
+                <label style="color:#fff; display:block; margin-bottom:5px;">따르는자 색상:</label>
+                <input id="followerColor" type="color" value="#ef4444" style="width:100%; height:40px; border:none; border-radius:4px;">
+            </div>
+            <button id="leaderStartButton" class="start-button" style="background:#6366f1; border:none; border-radius:6px; padding:12px; color:#fff; cursor:pointer; font-weight:bold;">게임 시작</button>
+            <button id="backToModeSelect" class="back-button" style="background:rgba(255,255,255,0.2); border:none; border-radius:6px; padding:10px; color:#fff; cursor:pointer;">← 뒤로가기</button>
+        </div>
+    </div>
+
+    <!-- 하이브리드 시스템 설정 -->
+    <div id="hybridSetup" class="glass-card" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:200; min-width:400px;">
+        <h2 style="text-align:center; margin-bottom:20px; color:#fff;">하이브리드 시스템 설정</h2>
+        <div style="display:flex; flex-direction:column; gap:15px;">
+            <div>
+                <label style="color:#fff; display:block; margin-bottom:5px;">플레이어1 이름:</label>
+                <input id="player1Name" type="text" placeholder="플레이어1" style="width:100%; padding:8px; border-radius:4px; border:none;">
+            </div>
+            <div>
+                <label style="color:#fff; display:block; margin-bottom:5px;">플레이어1 색상:</label>
+                <input id="player1Color" type="color" value="#3b82f6" style="width:100%; height:40px; border:none; border-radius:4px;">
+            </div>
+            <div>
+                <label style="color:#fff; display:block; margin-bottom:5px;">플레이어2 이름:</label>
+                <input id="player2Name" type="text" placeholder="플레이어2" style="width:100%; padding:8px; border-radius:4px; border:none;">
+            </div>
+            <div>
+                <label style="color:#fff; display:block; margin-bottom:5px;">플레이어2 색상:</label>
+                <input id="player2Color" type="color" value="#ef4444" style="width:100%; height:40px; border:none; border-radius:4px;">
+            </div>
+            <div>
+                <label style="color:#fff; display:block; margin-bottom:5px;">하이브리드 플레이어 선택:</label>
+                <select id="hybridPlayer" style="width:100%; padding:8px; border-radius:4px; border:none;">
+                    <option value="player1">플레이어1 (마우스 조준)</option>
+                    <option value="player2">플레이어2 (자동 조준)</option>
+                </select>
+            </div>
+            <button id="hybridStartButton" class="start-button" style="background:#22c55e; border:none; border-radius:6px; padding:12px; color:#fff; cursor:pointer; font-weight:bold;">게임 시작</button>
+            <button id="backToModeSelect" class="back-button" style="background:rgba(255,255,255,0.2); border:none; border-radius:6px; padding:10px; color:#fff; cursor:pointer;">← 뒤로가기</button>
+        </div>
+    </div>
     </div>
 
     <!-- 랭킹 화면 -->
@@ -579,6 +1014,14 @@
                         gunRecoil: 0,
                         gunRecoilTarget: 0,
                     },
+                    player2: null, // 플레이어2 객체 (멀티플레이용)
+                    multiplayerMode: null, // 멀티플레이 모드 ('leader', 'hybrid', null)
+                    multiplayerConfig: null, // 멀티플레이 설정
+                    // 부활 시스템 관련 속성들
+                    player1Dead: false, // 플레이어1 사망 여부
+                    player2Dead: false, // 플레이어2 사망 여부
+                    lastDeathWave: 0, // 마지막 사망한 웨이브
+                    revivalWaveCount: 0, // 부활을 위한 웨이브 카운트
                     enemies: [], // 적 배열
                     projectiles: [], // 발사체 배열
                     items: [], // 아이템 배열
@@ -603,6 +1046,49 @@
                 this.GRAVITY = 0.8; // 중력 가속도
                 this.FRICTION = 0.85; // 마찰 계수
                 this.GROUND_Y = 50; // 지면의 Y 좌표 (캔버스 하단으로부터의 거리)
+                
+                // 퀘스트 시스템 초기화
+                this.questSystem = {
+                    activeQuests: [],
+                    completedQuests: [],
+                    questTypes: [
+                        {
+                            id: 'wave_clear',
+                            name: '웨이브 돌파',
+                            description: '{target}웨이브까지 클리어',
+                            type: 'wave',
+                            rewards: { score: 500, health: 50 }
+                        },
+                        {
+                            id: 'score_reach',
+                            name: '점수 달성',
+                            description: '{target}점 달성',
+                            type: 'score',
+                            rewards: { score: 300, ammo: 30 }
+                        },
+                        {
+                            id: 'boss_kill',
+                            name: '보스 처치',
+                            description: '보스 {target}마리 처치',
+                            type: 'boss_kill',
+                            rewards: { score: 1000, health: 100, ammo: 50 }
+                        },
+                        {
+                            id: 'enemy_kill',
+                            name: '적 처치',
+                            description: '적 {target}마리 처치',
+                            type: 'enemy_kill',
+                            rewards: { score: 200, health: 30 }
+                        },
+                        {
+                            id: 'item_collect',
+                            name: '아이템 수집',
+                            description: '아이템 {target}개 수집',
+                            type: 'item_collect',
+                            rewards: { score: 150, ammo: 20 }
+                        }
+                    ]
+                };
                 // 사용자 요청에 따라 표정 배열에 ': @' 추가
                 this.EXPRESSIONS = [':D', ':>', ':<', ':O', ':/', ':#', 'XD', 'X>', ':V', ':@']; // 캐릭터 표정 배열
                 
@@ -945,10 +1431,47 @@
                     if (e.key === '1') this.currentWeapon = 'gun';
                     if (e.key === '2') this.currentWeapon = 'melee';
                     if (e.key.toLowerCase() === 'r') this.reload(); // R키로 재장전
+                    
+                    // 플레이어2 키 입력 처리 (멀티플레이 모드일 때만)
+                    if (this.gameState.player2 && this.gameState.multiplayerMode) {
+                        // 플레이어2 키 매핑: WASD -> IJKL, 스페이스 -> 엔터, R -> T
+                        const player2KeyMap = {
+                            'i': 'w', 'j': 'a', 'k': 's', 'l': 'd',
+                            'enter': ' ', 't': 'r'
+                        };
+                        
+                        const mappedKey = player2KeyMap[e.key.toLowerCase()];
+                        if (mappedKey) {
+                            this.gameState.player2.keys[mappedKey] = true;
+                        }
+                        
+                        // 플레이어2 발사 (O키)
+                        if (e.key.toLowerCase() === 'o' && this.gameState.gameStatus === 'playing') {
+                            this.shootPlayer2();
+                        }
+                        
+                        // 플레이어2 재장전 (T키)
+                        if (e.key.toLowerCase() === 't') {
+                            this.reloadPlayer2();
+                        }
+                    }
                 });
                 
                 document.addEventListener('keyup', (e) => {
                     this.keys[e.key.toLowerCase()] = false;
+                    
+                    // 플레이어2 키 입력 처리
+                    if (this.gameState.player2 && this.gameState.multiplayerMode) {
+                        const player2KeyMap = {
+                            'i': 'w', 'j': 'a', 'k': 's', 'l': 'd',
+                            'enter': ' ', 't': 'r'
+                        };
+                        
+                        const mappedKey = player2KeyMap[e.key.toLowerCase()];
+                        if (mappedKey) {
+                            this.gameState.player2.keys[mappedKey] = false;
+                        }
+                    }
                 });
                 
                 // 마우스 입력 처리
@@ -1075,9 +1598,348 @@
                 this.updateHUD(); // HUD 초기 업데이트
                 this.hideMessage(); // 메시지 숨기기
 
+                // 퀘스트 초기화
+                this.questSystem.activeQuests = [];
+                for (let i = 0; i < 3; i++) {
+                    this.questSystem.activeQuests.push(this.generateQuest());
+                }
+                this.updateQuestUI();
+
                 this.currentWeapon = 'gun';
                 this.upgrades = { gun: 0, melee: 0, health: 0, speed: 0, cooldown: 0 };
             }
+
+            // 멀티플레이 게임 시작 메서드
+            startMultiplayerGame = (mode, config) => {
+                this.canvas.style.filter = 'blur(0px)';
+                document.getElementById('startScreen').style.display = 'none';
+                document.querySelector('.hud').style.display = 'flex';
+                document.getElementById('rewardSelectionScreen').style.display = 'none';
+
+                // 게임 상태 초기화
+                this.gameState = {
+                    player: {
+                        x: this.canvas.width / 2, y: this.canvas.height / 2,
+                        width: 40, height: 40,
+                        vx: 0, vy: 0,
+                        health: 150, maxHealth: 150,
+                        ammo: 30, maxAmmo: 30,
+                        speed: 5, jumpPower: 15,
+                        onGround: false, facing: 0,
+                        expression: this.getRandomExpression(),
+                        color: config.player1Color || config.leaderColor || '#6366f1',
+                        baseDamage: 10,
+                        multishot: 1,
+                        rapidFireTime: 0,
+                        damageReductionFactor: 1,
+                        shieldBoostEndTime: 0,
+                        healthRegenEndTime: 0,
+                        lastRegenTick: 0,
+                        magnetEndTime: 0,
+                        magnetRadius: 200,
+                        lastHitById: null,
+                        type: 'player',
+                        orbitingKnives: [],
+                        piercingShot: 0,
+                        explosiveShot: 0,
+                        ricochetLevel: 0,
+                        homingLevel: 0,
+                        splitLevel: 0,
+                        lifeStealPercent: 0,
+                        critChance: 0,
+                        critMultiplier: 1.5,
+                        cooldownReduction: 0,
+                        armor: 0,
+                        timeStopEndTime: 0,
+                        ammoRegenEndTime: 0,
+                        lastAmmoRegenTick: 0,
+                        ammoRegenAmount: 0,
+                        dashCooldown: 0,
+                        dashEndTime: 0,
+                        isDashing: false,
+                        reloadTime: 1500,
+                        isReloading: false,
+                        machineGunMode: false,
+                        machineGunPenalty: false,
+                        reloadPenalty: 0,
+                        gunRecoil: 0,
+                        gunRecoilTarget: 0,
+                    },
+                    player2: this.createPlayer2(config),
+                    multiplayerMode: mode,
+                    multiplayerConfig: config,
+                    // 부활 시스템 초기화
+                    player1Dead: false,
+                    player2Dead: false,
+                    lastDeathWave: 0,
+                    revivalWaveCount: 0,
+                    enemies: [],
+                    projectiles: [],
+                    items: [],
+                    particles: [],
+                    floatingTexts: [],
+                    allies: [],
+                    score: 0,
+                    wave: 1,
+                    gameStatus: 'playing',
+                    message: '',
+                    messageTimer: 0,
+                    playerSlowedEndTime: 0,
+                    timeSlowEndTime: 0,
+                    timeSlowEffect: 1
+                };
+                
+                // 보스 시스템 초기화
+                this.bossSystem = {
+                    isActive: false,
+                    currentBoss: null,
+                    spawnLock: false
+                };
+                
+                // 게임 모드 설정
+                this.gameMode = 'multiplayer';
+                
+                // 초기 웨이브 생성
+                this.spawnInitialWave();
+                
+                // 게임 루프 시작
+                this.gameLoop();
+                this.updateHUD();
+                this.hideMessage();
+                
+                // 퀘스트 초기화
+                this.questSystem.activeQuests = [];
+                for (let i = 0; i < 3; i++) {
+                    this.questSystem.activeQuests.push(this.generateQuest());
+                }
+                this.updateQuestUI();
+                
+                this.currentWeapon = 'gun';
+                this.upgrades = { gun: 0, melee: 0, health: 0, speed: 0, cooldown: 0 };
+                
+                // 멀티플레이 모드별 메시지 표시
+                if (mode === 'leader') {
+                    this.showMessage('리더 시스템 시작!', `${config.leaderName}이 ${config.followerName}을 이끕니다!`, 2000);
+                } else if (mode === 'hybrid') {
+                    const hybridPlayerName = config.hybridPlayer === 'player1' ? config.player1Name : config.player2Name;
+                    this.showMessage('하이브리드 시스템 시작!', `${hybridPlayerName}이 자동 조준을 사용합니다!`, 2000);
+                }
+            };
+
+            // 플레이어2 생성 메서드
+            createPlayer2 = (config) => {
+                const player2 = {
+                    x: this.canvas.width / 2 + 50,
+                    y: this.canvas.height / 2,
+                    width: 40,
+                    height: 40,
+                    vx: 0,
+                    vy: 0,
+                    health: 150,
+                    maxHealth: 150,
+                    ammo: 30,
+                    maxAmmo: 30,
+                    speed: 5,
+                    jumpPower: 15,
+                    onGround: false,
+                    facing: 0,
+                    expression: this.getRandomExpression(),
+                    color: config.player2Color || config.followerColor || '#ef4444',
+                    baseDamage: 10,
+                    multishot: 1,
+                    rapidFireTime: 0,
+                    damageReductionFactor: 1,
+                    shieldBoostEndTime: 0,
+                    healthRegenEndTime: 0,
+                    lastRegenTick: 0,
+                    magnetEndTime: 0,
+                    magnetRadius: 200,
+                    lastHitById: null,
+                    type: 'player2',
+                    orbitingKnives: [],
+                    piercingShot: 0,
+                    explosiveShot: 0,
+                    ricochetLevel: 0,
+                    homingLevel: 0,
+                    splitLevel: 0,
+                    lifeStealPercent: 0,
+                    critChance: 0,
+                    critMultiplier: 1.5,
+                    cooldownReduction: 0,
+                    armor: 0,
+                    timeStopEndTime: 0,
+                    ammoRegenEndTime: 0,
+                    lastAmmoRegenTick: 0,
+                    ammoRegenAmount: 0,
+                    dashCooldown: 0,
+                    dashEndTime: 0,
+                    isDashing: false,
+                    reloadTime: 1500,
+                    isReloading: false,
+                    machineGunMode: false,
+                    machineGunPenalty: false,
+                    reloadPenalty: 0,
+                    gunRecoil: 0,
+                    gunRecoilTarget: 0,
+                    // 플레이어2 전용 속성들
+                    keys: {}, // 플레이어2 키 입력
+                    lastShot: 0, // 마지막 발사 시간
+                    autoAimTarget: null, // 자동 조준 타겟
+                    followTarget: null, // 따라갈 타겟 (리더 시스템용)
+                };
+                
+                return player2;
+            };
+
+            // 플레이어2 발사 메서드
+            shootPlayer2 = () => {
+                const player2 = this.gameState.player2;
+                if (!player2 || player2.isReloading || player2.ammo <= 0 || this.gameState.player2Dead) return;
+                
+                const now = Date.now();
+                if (now - player2.lastShot < 200) return; // 발사 속도 제한
+                
+                player2.lastShot = now;
+                player2.ammo--;
+                
+                // 조준 방향 결정
+                let angle = player2.facing;
+                
+                if (this.gameState.multiplayerMode === 'leader') {
+                    // 리더 시스템: 플레이어1의 조준 방향을 따라감
+                    angle = this.gameState.player.facing;
+                } else if (this.gameState.multiplayerMode === 'hybrid') {
+                    // 하이브리드 시스템: 자동 조준
+                    const nearestEnemy = this.findNearestEnemy(player2);
+                    if (nearestEnemy) {
+                        angle = Math.atan2(nearestEnemy.y - player2.y, nearestEnemy.x - player2.x);
+                    }
+                }
+                
+                // 발사체 생성
+                const projectile = {
+                    x: player2.x + Math.cos(angle) * 25,
+                    y: player2.y + Math.sin(angle) * 25,
+                    vx: Math.cos(angle) * 8,
+                    vy: Math.sin(angle) * 8,
+                    width: 6,
+                    height: 6,
+                    damage: player2.baseDamage,
+                    type: 'player2',
+                    owner: player2,
+                    piercing: player2.piercingShot > 0,
+                    piercingCount: player2.piercingShot,
+                    explosive: player2.explosiveShot > 0,
+                    explosiveLevel: player2.explosiveShot,
+                    ricochetLevel: player2.ricochetLevel,
+                    homingLevel: player2.homingLevel,
+                    splitLevel: player2.splitLevel,
+                    lifeStealPercent: player2.lifeStealPercent,
+                    critChance: player2.critChance,
+                    critMultiplier: player2.critMultiplier
+                };
+                
+                this.gameState.projectiles.push(projectile);
+                
+                // 다중 발사 처리
+                if (player2.multishot > 1) {
+                    for (let i = 1; i < player2.multishot; i++) {
+                        const spreadAngle = angle + (i - (player2.multishot - 1) / 2) * 0.2;
+                        const spreadProjectile = {
+                            ...projectile,
+                            x: player2.x + Math.cos(spreadAngle) * 25,
+                            y: player2.y + Math.sin(spreadAngle) * 25,
+                            vx: Math.cos(spreadAngle) * 8,
+                            vy: Math.sin(spreadAngle) * 8
+                        };
+                        this.gameState.projectiles.push(spreadProjectile);
+                    }
+                }
+                
+                // 분열 사격 처리
+                if (player2.splitLevel > 0) {
+                    for (let i = 0; i < player2.splitLevel; i++) {
+                        const splitAngle = angle + (i + 1) * (Math.PI / (player2.splitLevel + 1));
+                        const splitProjectile = {
+                            ...projectile,
+                            x: player2.x + Math.cos(splitAngle) * 25,
+                            y: player2.y + Math.sin(splitAngle) * 25,
+                            vx: Math.cos(splitAngle) * 8,
+                            vy: Math.sin(splitAngle) * 8
+                        };
+                        this.gameState.projectiles.push(splitProjectile);
+                    }
+                }
+            };
+
+            // 가장 가까운 적 찾기
+            findNearestEnemy = (player) => {
+                let nearestEnemy = null;
+                let nearestDistance = Infinity;
+                
+                this.gameState.enemies.forEach(enemy => {
+                    const distance = Math.sqrt((enemy.x - player.x) ** 2 + (enemy.y - player.y) ** 2);
+                    if (distance < nearestDistance) {
+                        nearestDistance = distance;
+                        nearestEnemy = enemy;
+                    }
+                });
+                
+                return nearestEnemy;
+            };
+
+            // 플레이어2 재장전 메서드
+            reloadPlayer2 = () => {
+                const player2 = this.gameState.player2;
+                if (!player2 || player2.isReloading || player2.ammo >= player2.maxAmmo) return;
+                
+                player2.isReloading = true;
+                const reloadTime = player2.reloadTime + player2.reloadPenalty;
+                
+                setTimeout(() => {
+                    if (player2) {
+                        player2.ammo = player2.maxAmmo;
+                        player2.isReloading = false;
+                    }
+                }, reloadTime);
+            };
+
+            // 플레이어 사망 처리 메서드
+            handlePlayerDeath = (playerType) => {
+                if (playerType === 'player1') {
+                    this.gameState.player1Dead = true;
+                    this.gameState.player.health = 0;
+                    this.showMessage('플레이어1 사망!', '플레이어2가 5웨이브를 클리어하면 부활합니다!', 3000);
+                } else if (playerType === 'player2') {
+                    this.gameState.player2Dead = true;
+                    this.gameState.player2.health = 0;
+                    this.showMessage('플레이어2 사망!', '플레이어1이 5웨이브를 클리어하면 부활합니다!', 3000);
+                }
+                
+                this.gameState.lastDeathWave = this.gameState.wave;
+                
+                // 두 플레이어 모두 죽었는지 확인
+                if (this.gameState.player1Dead && this.gameState.player2Dead) {
+                    this.gameOver();
+                }
+            };
+
+            // 플레이어 부활 메서드
+            revivePlayer = (playerType) => {
+                if (playerType === 'player1') {
+                    this.gameState.player1Dead = false;
+                    this.gameState.player.health = this.gameState.player.maxHealth * 0.5; // 50% 체력으로 부활
+                    this.gameState.player.ammo = this.gameState.player.maxAmmo;
+                    this.showMessage('플레이어1 부활!', '50% 체력으로 부활했습니다!', 3000);
+                } else if (playerType === 'player2') {
+                    this.gameState.player2Dead = false;
+                    this.gameState.player2.health = this.gameState.player2.maxHealth * 0.5; // 50% 체력으로 부활
+                    this.gameState.player2.ammo = this.gameState.player2.maxAmmo;
+                    this.showMessage('플레이어2 부활!', '50% 체력으로 부활했습니다!', 3000);
+                }
+                
+                this.gameState.revivalWaveCount = 0; // 부활 카운트 리셋
+            };
 
             // 게임 시작
             startGame = () => {
@@ -1275,7 +2137,7 @@
             // 보스 생성 함수
             createBoss = (bossType) => {
                 const x = this.canvas.width / 2;
-                const y = this.canvas.height / 2;
+                const y = this.canvas.height / 2 - 100; // 화면 중앙에서 약간 위쪽에 생성
                 let bossData = { ...this.ENEMY_TYPES[bossType] };
                 
                 // 보스 스케일링: 웨이브가 오를수록 강해짐
@@ -1507,7 +2369,7 @@
             // 플레이어 발사 로직
             shoot = () => {
                 const player = this.gameState.player;
-                if (player.isReloading) return;
+                if (player.isReloading || this.gameState.player1Dead) return;
                 if (this.currentWeapon === 'gun') {
                     if (player.ammo <= 0) {
                         this.reload();
@@ -1625,6 +2487,112 @@
                 }, 200);
             };
 
+            // 퀘스트 생성
+            generateQuest = () => {
+                const questType = this.questSystem.questTypes[Math.floor(Math.random() * this.questSystem.questTypes.length)];
+                let target = 0;
+                
+                switch (questType.type) {
+                    case 'wave':
+                        target = this.gameState.wave + Math.floor(Math.random() * 5) + 3; // 현재 웨이브 + 3~7
+                        break;
+                    case 'score':
+                        target = this.gameState.score + Math.floor(Math.random() * 2000) + 1000; // 현재 점수 + 1000~3000
+                        break;
+                    case 'boss_kill':
+                        target = Math.floor(Math.random() * 3) + 1; // 1~3마리
+                        break;
+                    case 'enemy_kill':
+                        target = Math.floor(Math.random() * 20) + 10; // 10~30마리
+                        break;
+                    case 'item_collect':
+                        target = Math.floor(Math.random() * 10) + 5; // 5~15개
+                        break;
+                }
+                
+                return {
+                    id: Date.now() + Math.random(),
+                    type: questType.type,
+                    name: questType.name,
+                    description: questType.description.replace('{target}', target),
+                    target: target,
+                    current: 0,
+                    rewards: questType.rewards,
+                    completed: false
+                };
+            };
+
+            // 퀘스트 진행도 업데이트
+            updateQuestProgress = (type, amount = 1) => {
+                this.questSystem.activeQuests.forEach(quest => {
+                    if (quest.type === type && !quest.completed) {
+                        quest.current += amount;
+                        if (quest.current >= quest.target) {
+                            this.completeQuest(quest);
+                        }
+                    }
+                });
+            };
+
+            // 퀘스트 완료
+            completeQuest = (quest) => {
+                quest.completed = true;
+                quest.current = quest.target;
+                
+                // 보상 지급
+                if (quest.rewards.score) {
+                    this.gameState.score += quest.rewards.score;
+                }
+                if (quest.rewards.health) {
+                    this.gameState.player.health = Math.min(this.gameState.player.maxHealth, this.gameState.player.health + quest.rewards.health);
+                }
+                if (quest.rewards.ammo) {
+                    this.gameState.player.ammo = Math.min(this.gameState.player.maxAmmo, this.gameState.player.ammo + quest.rewards.ammo);
+                }
+                
+                // 완료된 퀘스트 이동
+                this.questSystem.completedQuests.push(quest);
+                this.questSystem.activeQuests = this.questSystem.activeQuests.filter(q => q.id !== quest.id);
+                
+                // 완료 메시지 표시
+                this.showMessage(`퀘스트 완료!`, `${quest.name}: ${quest.rewards.score}점 획득!`, 3000);
+                
+                // 새로운 퀘스트 생성
+                if (this.questSystem.activeQuests.length < 3) {
+                    this.questSystem.activeQuests.push(this.generateQuest());
+                }
+                
+                this.updateQuestUI();
+            };
+
+            // 퀘스트 UI 업데이트
+            updateQuestUI = () => {
+                const questList = document.getElementById('questList');
+                if (!questList) return;
+                
+                let questHTML = '';
+                this.questSystem.activeQuests.forEach(quest => {
+                    const progress = Math.min(100, (quest.current / quest.target) * 100);
+                    const status = quest.completed ? '✅' : '⏳';
+                    questHTML += `
+                        <div style="margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 5px;">
+                            <div style="font-weight: bold; color: ${quest.completed ? '#4ade80' : '#fbbf24'};">${status} ${quest.name}</div>
+                            <div style="font-size: 12px; margin: 5px 0;">${quest.description}</div>
+                            <div style="font-size: 11px; color: #a1a1aa;">진행도: ${quest.current}/${quest.target} (${progress.toFixed(1)}%)</div>
+                            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin-top: 5px;">
+                                <div style="width: ${progress}%; height: 100%; background: ${quest.completed ? '#4ade80' : '#fbbf24'}; border-radius: 2px; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if (this.questSystem.activeQuests.length === 0) {
+                    questHTML = '<div style="color: #a1a1aa; text-align: center; padding: 20px;">활성 퀘스트가 없습니다</div>';
+                }
+                
+                questList.innerHTML = questHTML;
+            };
+
             reload = () => {
                 const player = this.gameState.player;
                 if (player.isReloading) return;
@@ -1717,6 +2685,8 @@
                 this.showMessage(`${bossData.name} 등장!`, '강력한 보스가 나타났습니다!', 2000);
                 
                 console.log(`보스 웨이브 ${this.gameState.wave} 시작: ${bossData.name}`);
+                console.log(`보스 생성됨: ${bossData.name}, 위치: (${boss.x}, ${boss.y}), 체력: ${boss.health}`);
+                console.log(`현재 적 수: ${this.gameState.enemies.length}`);
             }
             
             // 일반 웨이브 생성
@@ -1872,6 +2842,9 @@
 
                 // 플레이어 입력 처리
                 if (character === player) { // character === this.gameState.player 대신 player 사용
+                    // 플레이어1이 죽어있으면 입력 처리 안함
+                    if (this.gameState.player1Dead) return;
+                    
                     const currentSpeed = character.speed * (now > this.gameState.playerSlowedEndTime ? 1 : this.gameState.playerSlowEffect || 1);
                     if (this.keys['a']) character.vx -= currentSpeed;
                     if (this.keys['d']) character.vx += currentSpeed;
@@ -1885,6 +2858,34 @@
                     const dy = this.mouse.y - (character.y + character.height / 2);
                     character.facing = Math.atan2(dy, dx);
                     // gunRecoil 보간 (부드럽게 복귀)
+                    character.gunRecoil += (character.gunRecoilTarget - character.gunRecoil) * 0.25;
+                    if (Math.abs(character.gunRecoil - character.gunRecoilTarget) < 0.5) character.gunRecoil = character.gunRecoilTarget;
+                } else if (character.type === 'player2') {
+                    // 플레이어2가 죽어있으면 입력 처리 안함
+                    if (this.gameState.player2Dead) return;
+                    
+                    // 플레이어2 입력 처리
+                    const currentSpeed = character.speed * (now > this.gameState.playerSlowedEndTime ? 1 : this.gameState.playerSlowEffect || 1);
+                    if (character.keys['a']) character.vx -= currentSpeed;
+                    if (character.keys['d']) character.vx += currentSpeed;
+                    if ((character.keys['w'] || character.keys[' ']) && character.onGround) {
+                        character.vy = -character.jumpPower;
+                        character.onGround = false;
+                    }
+                    
+                    // 조준 방향 결정
+                    if (this.gameState.multiplayerMode === 'leader') {
+                        // 리더 시스템: 플레이어1의 조준 방향을 따라감
+                        character.facing = this.gameState.player.facing;
+                    } else if (this.gameState.multiplayerMode === 'hybrid') {
+                        // 하이브리드 시스템: 자동 조준
+                        const nearestEnemy = this.findNearestEnemy(character);
+                        if (nearestEnemy) {
+                            character.facing = Math.atan2(nearestEnemy.y - character.y, nearestEnemy.x - character.x);
+                        }
+                    }
+                    
+                    // gunRecoil 보간
                     character.gunRecoil += (character.gunRecoilTarget - character.gunRecoil) * 0.25;
                     if (Math.abs(character.gunRecoil - character.gunRecoilTarget) < 0.5) character.gunRecoil = character.gunRecoilTarget;
                 } else if (character.type === 'ally') {
@@ -2700,7 +3701,13 @@
                                 }
                                 
                                 enemy.health -= p.damage;
-                                this.createFloatingText(enemy.x + enemy.width / 2, enemy.y, `-${p.damage}`, 'white');
+                                // 치명타 시각적 피드백
+                                if (p.isCritical) {
+                                    this.createFloatingText(enemy.x + enemy.width / 2, enemy.y, `-${p.damage} 치명타!`, '#ff0000'); // 빨간색으로 치명타 표시
+                                    this.createFloatingText(enemy.x + enemy.width / 2, enemy.y - 20, '💥', '#ff0000'); // 치명타 이모지
+                                } else {
+                                    this.createFloatingText(enemy.x + enemy.width / 2, enemy.y, `-${p.damage}`, 'white');
+                                }
                                 this.createHitParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
                                 // 폭발 사격
                                 if (p.explosiveRadius && p.explosiveRadius > 0) {
@@ -2762,7 +3769,18 @@
                                     }, p.slowDuration);
                                 }
                                 
-                                if (player.health <= 0) this.gameOver();
+                                if (player.health <= 0) {
+                                    if (this.gameState.multiplayerMode) {
+                                        this.handlePlayerDeath('player1');
+                                    } else {
+                                        this.gameOver();
+                                    }
+                                }
+                                
+                                // 플레이어2 체력 체크 (멀티플레이 모드일 때만)
+                                if (this.gameState.player2 && this.gameState.multiplayerMode && this.gameState.player2.health <= 0) {
+                                    this.handlePlayerDeath('player2');
+                                }
                             }
                             projectilesToRemove.add(i);
                         }
@@ -2870,7 +3888,16 @@
                         this.gameState.player.lastHitById = ownerId;
 
                         if (player.health <= 0) {
-                            this.gameOver();
+                            if (this.gameState.multiplayerMode) {
+                                this.handlePlayerDeath('player1');
+                            } else {
+                                this.gameOver();
+                            }
+                        }
+                        
+                        // 플레이어2 체력 체크 (멀티플레이 모드일 때만)
+                        if (this.gameState.player2 && this.gameState.multiplayerMode && this.gameState.player2.health <= 0) {
+                            this.handlePlayerDeath('player2');
                         }
                     }
                 }
@@ -2995,10 +4022,159 @@
                         return false; // 아이템 제거
                     }
                     
+                    // 플레이어2와 충돌 체크 (멀티플레이 모드일 때만)
+                    if (this.gameState.player2 && this.gameState.multiplayerMode) {
+                        const player2 = this.gameState.player2;
+                        if (player2.x < item.x + item.width &&
+                            player2.x + player2.width > item.x &&
+                            player2.y < item.y + item.height &&
+                            player2.y + player2.height > item.y) {
+                            
+                            this.collectItemPlayer2(item); // 플레이어2 아이템 수집
+                            return false; // 아이템 제거
+                        }
+                    }
+                    
                     return true; // 아이템 유지
                 });
             }
             
+            // 플레이어2 아이템 수집 시 효과 적용
+            collectItemPlayer2 = (item) => {
+                const player2 = this.gameState.player2;
+                const now = Date.now();
+                
+                switch (item.type) {
+                    case 'health':
+                        player2.health = Math.min(player2.maxHealth, player2.health + item.effect);
+                        this.createFloatingText(player2.x + player2.width / 2, player2.y, `+${item.effect}`, 'green');
+                        this.showMessage(`P2 +${item.effect} 체력!`, '', 1500);
+                        break;
+                    case 'ammo':
+                        player2.ammo = Math.min(player2.maxAmmo, player2.ammo + item.effect);
+                        this.createFloatingText(player2.x + player2.width / 2, player2.y, `+${item.effect}`, 'blue');
+                        this.showMessage(`P2 +${item.effect} 탄약!`, '', 1500);
+                        break;
+                    case 'speed':
+                        player2.speed = Math.min(10, player2.speed + item.effect);
+                        this.showMessage(`P2 속도 증가!`, `+${item.effect}`, 1500);
+                        break;
+                    case 'shield':
+                        player2.maxHealth += item.effect;
+                        player2.health = Math.min(player2.maxHealth, player2.health + item.effect);
+                        this.showMessage(`P2 방어막 강화!`, `+${item.effect} 최대 체력`, 1500);
+                        break;
+                    case 'damage':
+                        player2.baseDamage = (player2.baseDamage || 25) + item.effect;
+                        this.showMessage(`P2 공격력 증가!`, `+${item.effect} 데미지`, 1500);
+                        break;
+                    case 'multishot':
+                        player2.multishot = Math.min(99, (player2.multishot || 1) + 1);
+                        this.showMessage(`P2 다중 발사!`, `${player2.multishot}발 동시 발사`, 2000);
+                        break;
+                    case 'megahealth':
+                        player2.health = Math.min(player2.maxHealth, player2.health + item.effect);
+                        this.createFloatingText(player2.x + player2.width / 2, player2.y, `+${item.effect}`, 'lime');
+                        this.showMessage(`P2 메가 힐링!`, `+${item.effect} 체력`, 2000);
+                        break;
+                    case 'rapid':
+                        player2.rapidFireTime = (Date.now() + 10000);
+                        this.showMessage(`P2 연발 모드!`, '10초간 빠른 발사', 2000);
+                        break;
+                    case 'invincibility':
+                        player2.invincibleEndTime = now + item.effect;
+                        this.showMessage(`P2 무적!`, `${item.effect / 1000}초간 무적`, 2000);
+                        break;
+                    case 'shield_boost':
+                        player2.shieldBoostEndTime = now + item.duration;
+                        player2.damageReductionFactor = item.effect;
+                        this.showMessage(`P2 쉴드 강화!`, `받는 피해 ${item.effect * 100}% 감소`, 2000);
+                        break;
+                    case 'time_slow':
+                        this.gameState.timeSlowEndTime = now + item.duration;
+                        this.gameState.timeSlowEffect = item.effect;
+                        this.showMessage(`P2 시간 둔화!`, `모든 적 느려짐`, 2000);
+                        break;
+                    case 'magnet':
+                        player2.magnetEndTime = now + item.duration;
+                        this.showMessage(`P2 자석!`, `아이템을 끌어당깁니다`, 2000);
+                        break;
+                    case 'health_regen':
+                        player2.healthRegenEndTime = now + item.duration;
+                        player2.lastRegenTick = now;
+                        player2.effect = item.effect;
+                        player2.tickInterval = item.tickInterval;
+                        this.showMessage(`P2 체력 재생!`, `${item.duration / 1000}초간 체력 회복`, 2000);
+                        break;
+                    case 'ally_summon':
+                        this.showMessage(`P2 아군 소환!`, `든든한 아군이 합류합니다!`, 2000);
+                        this.spawnAlly(player2.x + (player2.width / 2), player2.y + (player2.height / 2));
+                        break;
+                    case 'orbiting_knife':
+                        player2.orbitingKnives.push({
+                            angle: Math.random() * Math.PI * 2,
+                            radius: 60,
+                            speed: 0.05,
+                            damage: 15,
+                            lastHit: 0,
+                            cooldown: 200,
+                            color: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').color,
+                            emoji: this.ITEM_TYPES.find(i => i.type === 'orbiting_knife').emoji
+                        });
+                        this.showMessage(`P2 회전 칼날 획득!`, `플레이어 주위를 돕니다!`, 2000);
+                        break;
+                    case 'piercing_shot':
+                        player2.piercingShot = Math.min(99, player2.piercingShot + item.effect);
+                        this.showMessage(`P2 관통 사격!`, `탄환이 적을 관통합니다! (Lv.${player2.piercingShot})`, 2000);
+                        break;
+                    case 'explosive_shot':
+                        player2.explosiveShot = Math.min(99, player2.explosiveShot + item.effect);
+                        this.showMessage(`P2 폭발 사격!`, `탄환이 폭발합니다! (Lv.${player2.explosiveShot})`, 2000);
+                        break;
+                    case 'ricochet_shot':
+                        player2.ricochetLevel = Math.min(99, player2.ricochetLevel + item.effect);
+                        this.showMessage(`P2 도탄 사격!`, `탄환이 벽에서 튕겨 나갑니다! (Lv.${player2.ricochetLevel})`, 2000);
+                        break;
+                    case 'homing_shot':
+                        player2.homingLevel = Math.min(99, player2.homingLevel + item.effect);
+                        this.showMessage(`P2 유도 사격!`, `탄환이 적을 추적합니다! (Lv.${player2.homingLevel})`, 2000);
+                        break;
+                    case 'split_shot':
+                        player2.splitLevel = Math.min(99, player2.splitLevel + item.effect);
+                        this.showMessage(`P2 분열 사격!`, `탄환이 분열하여 추가 피해를 줍니다! (Lv.${player2.splitLevel})`, 2000);
+                        break;
+                    case 'life_steal':
+                        player2.lifeStealPercent = Math.min(0.2, player2.lifeStealPercent + item.effect);
+                        this.showMessage(`P2 생명력 흡수!`, `피해량의 ${(player2.lifeStealPercent * 100).toFixed(0)}% 체력 회복!`, 2000);
+                        break;
+                    case 'crit_chance':
+                        player2.critChance = Math.min(0.5, player2.critChance + item.effect);
+                        this.showMessage(`P2 치명타 확률!`, `치명타 확률 ${(player2.critChance * 100).toFixed(0)}%`, 2000);
+                        break;
+                    case 'cooldown_reduction':
+                        player2.cooldownReduction = Math.min(0.5, player2.cooldownReduction + item.effect);
+                        this.showMessage(`P2 재사용 대기시간 감소!`, `발사 속도 ${(player2.cooldownReduction * 100).toFixed(0)}% 증가!`, 2000);
+                        break;
+                    case 'armor':
+                        player2.armor += item.effect;
+                        this.showMessage(`P2 방어력!`, `피해량 ${item.effect} 감소!`, 2000);
+                        break;
+                    case 'time_stop':
+                        this.gameState.timeStopEndTime = now + item.effect;
+                        this.gameState.timeSlowEffect = 0;
+                        this.showMessage(`P2 시간 정지!`, `${item.effect / 1000}초간 모든 적 정지!`, 2000);
+                        break;
+                    case 'ammo_regen':
+                        player2.ammoRegenEndTime = now + item.duration;
+                        player2.lastAmmoRegenTick = now;
+                        player2.ammoRegenAmount = item.effect;
+                        this.showMessage(`P2 탄약 재생!`, `${item.duration / 1000}초간 탄약 자동 회복!`, 2000);
+                        break;
+                    default:
+                        break;
+                }
+            };
+
             // 아이템 수집 시 효과 적용
             collectItem = (item) => {
                 const player = this.gameState.player;
@@ -3239,11 +4415,38 @@
                 this.showMessage(`웨이브 ${this.gameState.wave} 완료!`, '다음 웨이브 준비 중...', 3000);
                 this.gameState.wave++;
                 
+                // 부활 시스템 체크 (멀티플레이 모드일 때만)
+                if (this.gameState.multiplayerMode) {
+                    this.checkRevivalSystem();
+                }
+                
                 setTimeout(() => {
                     this.gameState.gameStatus = 'spawning';
                     this.spawnInitialWave();
                     this.gameState.gameStatus = 'playing';
                 }, 3000);
+            }
+
+            // 부활 시스템 체크
+            checkRevivalSystem = () => {
+                // 플레이어1이 죽어있고 플레이어2가 살아있을 때
+                if (this.gameState.player1Dead && !this.gameState.player2Dead) {
+                    this.gameState.revivalWaveCount++;
+                    if (this.gameState.revivalWaveCount >= 5) {
+                        this.revivePlayer('player1');
+                    } else {
+                        this.showMessage(`플레이어1 부활까지`, `${5 - this.gameState.revivalWaveCount}웨이브 남음`, 2000);
+                    }
+                }
+                // 플레이어2가 죽어있고 플레이어1이 살아있을 때
+                else if (this.gameState.player2Dead && !this.gameState.player1Dead) {
+                    this.gameState.revivalWaveCount++;
+                    if (this.gameState.revivalWaveCount >= 5) {
+                        this.revivePlayer('player2');
+                    } else {
+                        this.showMessage(`플레이어2 부활까지`, `${5 - this.gameState.revivalWaveCount}웨이브 남음`, 2000);
+                    }
+                }
             }
             
             // 보스 시스템 리셋
@@ -3640,7 +4843,14 @@
                 // 체력 바 업데이트
                 const healthPercent = (Math.max(0, player.health) / player.maxHealth) * 100;
                 document.getElementById('healthFill').style.width = healthPercent + '%';
-                document.getElementById('healthText').textContent = `${Math.max(0, player.health.toFixed(0))}/${player.maxHealth.toFixed(0)}`;
+                
+                // 죽은 플레이어1은 특별한 표시
+                if (this.gameState.player1Dead) {
+                    document.getElementById('healthText').textContent = '사망';
+                    document.getElementById('healthFill').style.background = 'linear-gradient(90deg, #666, #999)';
+                } else {
+                    document.getElementById('healthText').textContent = `${Math.max(0, player.health.toFixed(0))}/${player.maxHealth.toFixed(0)}`;
+                }
                 
                 // 탄약 바 업데이트
                 const ammoPercent = (player.ammo / player.maxAmmo) * 100;
@@ -3732,6 +4942,44 @@
                     bossBarContainer.style.display = 'none';
                 }
                 
+                // 플레이어2 HUD 업데이트 (멀티플레이 모드일 때만)
+                if (this.gameState.player2 && this.gameState.multiplayerMode) {
+                    const player2 = this.gameState.player2;
+                    
+                    // 플레이어2 체력 바 업데이트
+                    const healthPercent2 = (Math.max(0, player2.health) / player2.maxHealth) * 100;
+                    document.getElementById('healthFill2').style.width = healthPercent2 + '%';
+                    
+                    // 죽은 플레이어2는 특별한 표시
+                    if (this.gameState.player2Dead) {
+                        document.getElementById('healthText2').textContent = '사망';
+                        document.getElementById('healthFill2').style.background = 'linear-gradient(90deg, #666, #999)';
+                        document.getElementById('ammoText2').textContent = '부활 대기';
+                        document.getElementById('ammoFill2').style.background = 'linear-gradient(90deg, #666, #999)';
+                    } else {
+                        document.getElementById('healthText2').textContent = `${Math.max(0, player2.health.toFixed(0))}/${player2.maxHealth.toFixed(0)}`;
+                        
+                        // 플레이어2 탄약 바 업데이트
+                        const ammoPercent2 = (player2.ammo / player2.maxAmmo) * 100;
+                        document.getElementById('ammoFill2').style.width = ammoPercent2 + '%';
+                        
+                        // 재장전 중일 때는 다른 색상으로 표시
+                        if (player2.isReloading) {
+                            document.getElementById('ammoFill2').style.background = 'linear-gradient(90deg, #ff6b6b, #ff8e8e)';
+                            document.getElementById('ammoText2').textContent = '재장전 중...';
+                        } else {
+                            document.getElementById('ammoFill2').style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+                            document.getElementById('ammoText2').textContent = `${player2.ammo.toFixed(0)}/${player2.maxAmmo.toFixed(0)}`;
+                        }
+                    }
+                    
+                    // 플레이어2 HUD 표시
+                    document.getElementById('player2HUD').style.display = 'flex';
+                } else {
+                    // 플레이어2 HUD 숨기기
+                    document.getElementById('player2HUD').style.display = 'none';
+                }
+                
                 // 5. updateHUD에 XP/점수 표시 추가 (테스팅 존에서는 점수만)
                 if (this.gameMode === 'testzone') {
                     document.getElementById('xpText').textContent = `점수: ${this.gameState.score}`;
@@ -3813,14 +5061,20 @@
                 this.ctx.fillRect(character.x + 3, character.y + character.height + 3, character.width, 5);
                 
                 // 플레이어 캐릭터 그리기 (변환 적용)
-                if (character.type === 'player') {
+                if (character.type === 'player' || character.type === 'player2') {
                     // 캐릭터의 중심으로 캔버스 원점 이동
                     this.ctx.translate(character.x + character.width / 2, character.y + character.height / 2);
                     // 마우스 방향으로 플레이어 회전 (캐릭터의 기본 방향이 오른쪽이라고 가정하고 180도 회전 보정)
                     this.ctx.rotate(character.facing + Math.PI); 
 
-                    // 캐릭터 몸체 (글래스 효과)
-                    this.ctx.globalAlpha = 0.8;
+                    // 죽은 플레이어는 반투명하게 표시
+                    if ((character.type === 'player' && this.gameState.player1Dead) || 
+                        (character.type === 'player2' && this.gameState.player2Dead)) {
+                        this.ctx.globalAlpha = 0.3;
+                    } else {
+                        this.ctx.globalAlpha = 0.8;
+                    }
+                    
                     this.ctx.fillStyle = character.color;
                     this.ctx.shadowBlur = 15;
                     this.ctx.shadowColor = character.color;
@@ -3855,6 +5109,13 @@
                     const gunOffsetX = -character.width / 2 - 10 - recoilOffset; // 반동으로 뒤로 밀림
                     const weaponEmoji = (this.currentWeapon === 'melee') ? '🔪' : '🔫';
                     this.ctx.fillText(weaponEmoji, gunOffsetX, 0); // 반동 오프셋 적용
+
+                    // 플레이어2 표시 (멀티플레이 모드에서만)
+                    if (character.type === 'player2') {
+                        this.ctx.font = '12px Poppins';
+                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                        this.ctx.fillText('P2', character.width / 2 + 15, -character.height / 2 - 10);
+                    }
 
                 } else {
                     // 비-플레이어 캐릭터 (적, 아군) 그리기 (변환 없음)
@@ -4140,6 +5401,10 @@
                 
                 // 캐릭터 그리기
                 this.drawCharacter(this.gameState.player);
+                // 플레이어2 그리기 (멀티플레이 모드일 때만)
+                if (this.gameState.player2 && this.gameState.multiplayerMode) {
+                    this.drawCharacter(this.gameState.player2);
+                }
                 this.gameState.enemies.forEach(enemy => this.drawCharacter(enemy));
                 this.gameState.allies.forEach(ally => this.drawCharacter(ally));
                 
@@ -4186,6 +5451,10 @@
                 }
                 // 1. 상태 업데이트
                 this.updateCharacter(this.gameState.player);
+                // 플레이어2 업데이트 (멀티플레이 모드일 때만)
+                if (this.gameState.player2 && this.gameState.multiplayerMode) {
+                    this.updateCharacter(this.gameState.player2);
+                }
                 this.gameState.enemies.forEach(e => this.updateCharacter(e));
                 this.gameState.allies.forEach(a => this.updateCharacter(a));
                 // 2. 웨이브 완료 체크
@@ -4463,10 +5732,75 @@
               window.game.startGame();
             }
           };
-          // (Optional) Disable multiButton for now
+          
+          // 멀티플레이 버튼 클릭 시 멀티플레이 모드 선택 화면 표시
           document.getElementById('multiButton').onclick = function() {
-            document.getElementById('multiInfo').style.display = 'block';
+            document.getElementById('introScreen').style.display = 'none';
+            document.getElementById('multiplayerModeSelect').style.display = 'flex';
           };
+          
+          // 리더 시스템 선택
+          document.getElementById('leaderSystemButton').onclick = function() {
+            document.getElementById('multiplayerModeSelect').style.display = 'none';
+            document.getElementById('leaderSetup').style.display = 'flex';
+          };
+          
+          // 하이브리드 시스템 선택
+          document.getElementById('hybridSystemButton').onclick = function() {
+            document.getElementById('multiplayerModeSelect').style.display = 'none';
+            document.getElementById('hybridSetup').style.display = 'flex';
+          };
+          
+          // 리더 시스템 설정 완료
+          document.getElementById('leaderStartButton').onclick = function() {
+            const leaderColor = document.getElementById('leaderColor').value;
+            const followerColor = document.getElementById('followerColor').value;
+            const leaderName = document.getElementById('leaderName').value || '리더';
+            const followerName = document.getElementById('followerName').value || '따르는자';
+            
+            document.getElementById('leaderSetup').style.display = 'none';
+            if (window.game && typeof window.game.startMultiplayerGame === 'function') {
+              window.game.startMultiplayerGame('leader', {
+                leaderColor: leaderColor,
+                followerColor: followerColor,
+                leaderName: leaderName,
+                followerName: followerName
+              });
+            }
+          };
+          
+          // 하이브리드 시스템 설정 완료
+          document.getElementById('hybridStartButton').onclick = function() {
+            const player1Color = document.getElementById('player1Color').value;
+            const player2Color = document.getElementById('player2Color').value;
+            const player1Name = document.getElementById('player1Name').value || '플레이어1';
+            const player2Name = document.getElementById('player2Name').value || '플레이어2';
+            const hybridPlayer = document.getElementById('hybridPlayer').value; // 'player1' or 'player2'
+            
+            document.getElementById('hybridSetup').style.display = 'none';
+            if (window.game && typeof window.game.startMultiplayerGame === 'function') {
+              window.game.startMultiplayerGame('hybrid', {
+                player1Color: player1Color,
+                player2Color: player2Color,
+                player1Name: player1Name,
+                player2Name: player2Name,
+                hybridPlayer: hybridPlayer
+              });
+            }
+          };
+          
+          // 뒤로가기 버튼들
+          document.getElementById('backToIntro').onclick = function() {
+            document.getElementById('multiplayerModeSelect').style.display = 'none';
+            document.getElementById('introScreen').style.display = 'flex';
+          };
+          
+          document.getElementById('backToModeSelect').onclick = function() {
+            document.getElementById('leaderSetup').style.display = 'none';
+            document.getElementById('hybridSetup').style.display = 'none';
+            document.getElementById('multiplayerModeSelect').style.display = 'flex';
+          };
+          
           // 테스팅 존 버튼 이벤트 리스너
           document.getElementById('testZoneButton').onclick = function() {
             document.getElementById('introScreen').style.display = 'none';
