@@ -748,6 +748,7 @@
                 <span id="xpText" style="margin-left:18px; color:#ffe066; font-size:1.1em; font-weight:600;"></span>
                 <button id="shopButton" style="margin-left:12px; font-size:1em; border-radius:6px; border:none; background:#ffe066; color:#222; padding:4px 16px; cursor:pointer;">상점</button>
                 <button id="testZoneHUDButton" style="margin-left:12px; font-size:1em; border-radius:6px; border:none; background:#ff6b6b; color:#fff; padding:4px 16px; cursor:pointer; display:none;">테스트 존</button>
+                <button id="enemyDexHUDButton" style="margin-left:12px; font-size:1em; border-radius:6px; border:none; background:#8b5cf6; color:#fff; padding:4px 16px; cursor:pointer;">적 도감</button>
             </div>
         </div>
     </div>
@@ -798,12 +799,12 @@
     </div>
 
     <!-- 적 도감 화면 -->
-    <div id="enemyDexScreen" class="glass-card" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:300; min-width:520px; min-height:340px; max-width:90vw; max-height:80vh; flex-direction:row; align-items:stretch; padding:0; overflow:hidden;">
+    <div id="enemyDexScreen" class="glass-card" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:300; min-width:600px; min-height:400px; max-width:90vw; max-height:80vh; flex-direction:row; align-items:stretch; padding:0; overflow:hidden; backdrop-filter:blur(20px); background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2); box-shadow:0 8px 32px rgba(0,0,0,0.3);">
         <!-- 좌측 리스트 -->
-        <div id="enemyDexList" style="width:180px; background:rgba(0,0,0,0.18); border-right:1px solid rgba(255,255,255,0.12); overflow-y:auto; max-height:80vh; min-height:340px; display:flex; flex-direction:column;"></div>
+        <div id="enemyDexList" style="width:200px; background:rgba(255,255,255,0.1); border-right:1px solid rgba(255,255,255,0.2); overflow-y:auto; max-height:80vh; min-height:400px; display:flex; flex-direction:column; backdrop-filter:blur(10px);"></div>
         <!-- 우측 상세 -->
-        <div id="enemyDexDetail" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:240px; padding:32px 16px 16px 16px;"></div>
-        <button id="closeEnemyDexButton" style="position:absolute; top:12px; right:16px;">닫기</button>
+        <div id="enemyDexDetail" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-width:300px; padding:32px 16px 16px 16px; overflow-y:auto; background:rgba(255,255,255,0.05); backdrop-filter:blur(5px);"></div>
+        <button id="closeEnemyDexButton" style="position:absolute; top:12px; right:16px; background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:8px 16px; color:#fff; cursor:pointer; backdrop-filter:blur(10px); transition:all 0.3s ease;">닫기</button>
     </div>
 
     <!-- 퀘스트 버튼 및 퀘스트 팝업 -->
@@ -1136,7 +1137,14 @@
                         summonCooldown: 9000, lastSummon: 0, // 소환
                         shieldCooldown: 12000, lastShield: 0, shieldDuration: 3000, isInvincible: false, invincibleEndTime: 0, // 쉴드
                         blackholeCooldown: 15000, lastBlackhole: 0, // 블랙홀
-                        description: '모든 보스 능력을 가진 궁극의 보스. 웨이브가 오를수록 더욱 강해진다.'
+                        description: '모든 보스 능력을 가진 궁극의 보스. 웨이브가 오를수록 더욱 강해진다.',
+                        dexInfo: {
+                            category: '보스',
+                            difficulty: '★★★★★',
+                            abilities: ['미사일 난사', '순간이동', '광역 폭발', '소환', '쉴드', '블랙홀'],
+                            strategy: '모든 능력을 가진 최종 보스. 체력이 높고 다양한 공격 패턴을 사용합니다. 쉴드 상태일 때는 무적이므로 기다려야 합니다.',
+                            weakness: '쉴드가 끝난 후 집중 공격'
+                        }
                     },
                     basic: {
                         name: '기본 적', health: 40, speed: 2, damage: 15, color: '#ef4444', size: 35, shootInterval: 2000, points: 100
@@ -1498,6 +1506,16 @@
 
                 // 시작 버튼 클릭 이벤트
                 document.getElementById('startButton').addEventListener('click', this.startGame);
+                
+                // 적 도감 버튼 클릭 이벤트
+                document.getElementById('enemyDexHUDButton').addEventListener('click', () => {
+                    this.showEnemyDex();
+                });
+                
+                // 적 도감 닫기 버튼
+                document.getElementById('closeEnemyDexButton').addEventListener('click', () => {
+                    this.hideEnemyDex();
+                });
             }
 
             // 시작 화면 표시 (캔버스 블러 처리)
@@ -1824,7 +1842,7 @@
                     vx: Math.cos(angle) * 8,
                     vy: Math.sin(angle) * 8,
                     radius: 3,
-                    damage: player2.baseDamage,
+                    damage: player2.baseDamage || 10,
                     life: 80,
                     color: player2.color || '#ff6b6b',
                     ownerId: 'player2',
@@ -1837,6 +1855,8 @@
                     hitEnemies: [],
                     isCritical: Math.random() < (player2.critChance || 0)
                 };
+                
+                console.log('플레이어2 발사체 생성:', projectile);
                 
                 this.gameState.projectiles.push(projectile);
                 
@@ -3678,6 +3698,9 @@
                 for (let i = 0; i < this.gameState.projectiles.length; i++) {
                     const p = this.gameState.projectiles[i];
                     if (p.ownerId === 'player' || p.ownerId === 'player2') {
+                        if (p.ownerId === 'player2') {
+                            console.log('플레이어2 발사체 충돌 체크:', p);
+                        }
                         for (let j = 0; j < this.gameState.enemies.length; j++) {
                             const enemy = this.gameState.enemies[j];
                             if (!enemy) continue;
@@ -5655,6 +5678,168 @@
                 document.getElementById('testZoneHUDButton').style.display = 'none';
                 document.getElementById('introScreen').style.display = 'flex';
                 this.gameState.gameStatus = 'start';
+            }
+
+            // 적 도감 표시
+            showEnemyDex = () => {
+                document.getElementById('enemyDexScreen').style.display = 'flex';
+                this.updateEnemyDex();
+            }
+
+            // 적 도감 숨김
+            hideEnemyDex = () => {
+                document.getElementById('enemyDexScreen').style.display = 'none';
+            }
+
+            // 적 도감 업데이트
+            updateEnemyDex = () => {
+                const enemyList = document.getElementById('enemyDexList');
+                const enemyDetail = document.getElementById('enemyDexDetail');
+                
+                enemyList.innerHTML = '';
+                enemyDetail.innerHTML = '';
+                
+                // 적 목록 생성
+                Object.entries(this.ENEMY_TYPES).forEach(([type, data]) => {
+                    const enemyDiv = document.createElement('div');
+                    enemyDiv.style.display = 'flex';
+                    enemyDiv.style.alignItems = 'center';
+                    enemyDiv.style.padding = '12px 16px';
+                    enemyDiv.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+                    enemyDiv.style.cursor = 'pointer';
+                    enemyDiv.style.color = '#fff';
+                    enemyDiv.style.fontSize = '14px';
+                    enemyDiv.style.transition = 'background 0.2s';
+                    
+                    // 보스인지 일반 적인지 구분
+                    const isBoss = type.startsWith('boss');
+                    const category = isBoss ? '보스' : '일반';
+                    const categoryColor = isBoss ? '#ff6b6b' : '#4ade80';
+                    
+                    enemyDiv.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:12px; width:100%;">
+                            <div style="width:20px; height:20px; background:${data.color}; border-radius:50%;"></div>
+                            <div style="flex:1;">
+                                <div style="font-weight:bold;">${data.name}</div>
+                                <div style="font-size:12px; color:${categoryColor};">${category}</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    enemyDiv.onmouseover = () => {
+                        enemyDiv.style.background = 'rgba(255,255,255,0.1)';
+                    };
+                    
+                    enemyDiv.onmouseout = () => {
+                        enemyDiv.style.background = 'transparent';
+                    };
+                    
+                    enemyDiv.onclick = () => {
+                        this.showEnemyDetail(type, data);
+                    };
+                    
+                    enemyList.appendChild(enemyDiv);
+                });
+                
+                // 첫 번째 적 선택
+                const firstEnemy = Object.entries(this.ENEMY_TYPES)[0];
+                if (firstEnemy) {
+                    this.showEnemyDetail(firstEnemy[0], firstEnemy[1]);
+                }
+            }
+
+            // 적 상세 정보 표시
+            showEnemyDetail = (type, data) => {
+                const enemyDetail = document.getElementById('enemyDexDetail');
+                
+                const isBoss = type.startsWith('boss');
+                const category = isBoss ? '보스' : '일반';
+                const categoryColor = isBoss ? '#ff6b6b' : '#4ade80';
+                
+                enemyDetail.innerHTML = `
+                    <div style="text-align:center; width:100%;">
+                        <h2 style="color:#fff; margin-bottom:8px;">${data.name}</h2>
+                        <div style="color:${categoryColor}; margin-bottom:20px; font-size:14px;">${category}</div>
+                        
+                        <div style="width:80px; height:80px; background:${data.color}; border-radius:50%; margin:0 auto 20px; display:flex; align-items:center; justify-content:center; font-size:24px;">
+                            ${this.getEnemyEmoji(type)}
+                        </div>
+                        
+                        <div style="background:rgba(255,255,255,0.1); border-radius:8px; padding:16px; margin-bottom:16px;">
+                            <h3 style="color:#fff; margin-bottom:12px; font-size:16px;">기본 정보</h3>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; color:#fff; font-size:14px;">
+                                <div>체력: ${data.health}</div>
+                                <div>속도: ${data.speed}</div>
+                                <div>공격력: ${data.damage}</div>
+                                <div>크기: ${data.size}</div>
+                                <div>발사 간격: ${data.shootInterval}ms</div>
+                                <div>점수: ${data.points}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background:rgba(255,255,255,0.1); border-radius:8px; padding:16px; margin-bottom:16px;">
+                            <h3 style="color:#fff; margin-bottom:12px; font-size:16px;">설명</h3>
+                            <p style="color:#fff; font-size:14px; line-height:1.5;">${data.description || '이 적에 대한 상세한 설명이 없습니다.'}</p>
+                        </div>
+                        
+                        ${data.dexInfo ? `
+                        <div style="background:rgba(255,255,255,0.1); border-radius:8px; padding:16px; margin-bottom:16px;">
+                            <h3 style="color:#fff; margin-bottom:12px; font-size:16px;">전투 정보</h3>
+                            <div style="color:#fff; font-size:14px; line-height:1.6;">
+                                <div style="margin-bottom:8px;"><strong>난이도:</strong> ${data.dexInfo.difficulty}</div>
+                                <div style="margin-bottom:8px;"><strong>능력:</strong> ${data.dexInfo.abilities.join(', ')}</div>
+                                <div style="margin-bottom:8px;"><strong>전략:</strong> ${data.dexInfo.strategy}</div>
+                                <div><strong>약점:</strong> ${data.dexInfo.weakness}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            // 적 이모지 반환
+            getEnemyEmoji = (type) => {
+                const emojiMap = {
+                    'boss': '👑',
+                    'boss_alpha': '🦁',
+                    'boss_beta': '🛡️',
+                    'boss_gamma': '⚡',
+                    'boss_delta': '🌀',
+                    'boss_epsilon': '🔄',
+                    'boss_zeta': '⏰',
+                    'boss_eta': '💥',
+                    'boss_theta': '🎯',
+                    'basic': '👾',
+                    'fast': '🏃',
+                    'tank': '🛡️',
+                    'sniper': '🎯',
+                    'bomber': '💣',
+                    'guardian': '🛡️',
+                    'assassin': '🗡️',
+                    'heavy': '⚔️',
+                    'ghost': '👻',
+                    'medic': '💊',
+                    'summoner': '🔮',
+                    'jumper': '🦘',
+                    'shielded': '🛡️',
+                    'teleporter': '🌀',
+                    'drone': '🚁',
+                    'spitter': '🟢',
+                    'berserker': '😤',
+                    'mirror': '🪞',
+                    'leech': '🩸',
+                    'mine': '💣',
+                    'freezer': '❄️',
+                    'reflector': '🪩',
+                    'healer': '💚',
+                    'portal': '🚪',
+                    'exploder': '💥',
+                    'magnet': '🧲',
+                    'curse': '👹',
+                    'floater': '🎈',
+                    'phaser': '✨'
+                };
+                return emojiMap[type] || '👾';
             }
 
             // 테스트 존 업데이트
