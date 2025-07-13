@@ -7013,11 +7013,17 @@
 
             // 모바일 컨트롤 초기화
             initMobileControls = () => {
-                const joystick = document.getElementById('joystick');
+                const joystick = document.getElementById('joystickContainer');
+                const joystickThumb = document.getElementById('joystickThumb');
                 const fireButton = document.getElementById('fireButton');
                 const jumpButton = document.getElementById('jumpButton');
                 const reloadButton = document.getElementById('reloadButton');
                 const aimArea = document.getElementById('aimArea');
+
+                if (!joystick || !fireButton || !jumpButton || !reloadButton || !aimArea) {
+                    console.error('Mobile control elements not found');
+                    return;
+                }
 
                 // 조이스틱 이벤트
                 joystick.addEventListener('touchstart', (e) => {
@@ -7043,10 +7049,9 @@
                     this.touchControls.joystick.active = false;
                     this.touchControls.joystick.x = 0;
                     this.touchControls.joystick.y = 0;
-                    const joystickKnob = joystick.querySelector('.joystick-knob');
-                    if (joystickKnob) {
-                        joystickKnob.style.left = '50%';
-                        joystickKnob.style.top = '50%';
+                    if (joystickThumb) {  // joystickThumb 사용
+                        joystickThumb.style.left = '50%';
+                        joystickThumb.style.top = '50%';
                     }
                 });
 
@@ -7145,11 +7150,10 @@
                 this.touchControls.reloadButton.pressed = false;
                 this.touchControls.aimArea.active = false;
 
-                const joystick = document.getElementById('joystick');
-                const joystickKnob = joystick.querySelector('.joystick-knob');
-                if (joystickKnob) {
-                    joystickKnob.style.left = '50%';
-                    joystickKnob.style.top = '50%';
+                const joystickThumb = document.getElementById('joystickThumb');  // joystickThumb 사용
+                if (joystickThumb) {
+                    joystickThumb.style.left = '50%';
+                    joystickThumb.style.top = '50%';
                 }
             };
         }
