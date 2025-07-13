@@ -839,7 +839,13 @@
                 <div id="joystickThumb" style="width:50px; height:50px; background:rgba(255,255,255,0.8); border-radius:50%; position:absolute; transform:translate(-50%, -50%);"></div>
             </div>
         </div>
-        
+
+        <div id="aimJoystickContainer" style="position:absolute; bottom:30px; right:30px; width:120px; height:120px; pointer-events:auto;">
+            <div id="aimJoystickBase" style="width:100%; height:100%; background:rgba(239,68,68,0.25); border:2px solid rgba(239,68,68,0.3); border-radius:50%; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
+                <div id="aimJoystickThumb" style="width:50px; height:50px; background:rgba(239,68,68,0.7); border-radius:50%; position:absolute; transform:translate(-50%, -50%);"></div>
+            </div>
+        </div>
+
         <!-- 오른쪽 액션 버튼들 -->
         <div id="actionButtons" style="position:absolute; bottom:30px; right:30px; display:flex; flex-direction:column; gap:15px; pointer-events:auto;">
             <!-- 점프 버튼 -->
@@ -3176,14 +3182,17 @@
                     
                     // 모바일 터치 컨트롤 처리
                     if (this.mobileMode) {
-                        // 조이스틱 이동
+                        // 이동 조이스틱
                         if (this.touchControls.joystick.active) {
-                            const joystickX = this.touchControls.joystick.x / 50; // -1 to 1 범위로 정규화
-                            const joystickY = this.touchControls.joystick.y / 50; // -1 to 1 범위로 정규화
-                            character.vx += joystickX * currentSpeed * 0.1; // 속도 조정
-                            character.vy += joystickY * currentSpeed * 0.1; // 속도 조정
+                            const joystickX = this.touchControls.joystick.x / 50;
+                            const joystickY = this.touchControls.joystick.y / 50;
+                            character.vx += joystickX * currentSpeed * 0.5; // 속도 0.1 → 0.5로 증가
+                            character.vy += joystickY * currentSpeed * 0.5;
                         }
-                        
+                        // 조준 조이스틱
+                        if (this.touchControls.aimJoystick && (this.touchControls.aimJoystick.x !== 0 || this.touchControls.aimJoystick.y !== 0)) {
+                            character.facing = Math.atan2(this.touchControls.aimJoystick.y, this.touchControls.aimJoystick.x);
+                        }
                         // 점프 버튼
                         if (this.touchControls.jumpButton.pressed && character.onGround) {
                             character.vy = -character.jumpPower;
@@ -7058,6 +7067,33 @@
                     }
                 });
 
+                aimJoystick.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const rect = aimJoystick.getBoundingClientRect();
+                    this.touchControls.aimJoystick = { centerX: rect.left + rect.width / 2, centerY: rect.top + rect.height / 2, active: true, x: 0, y: 0 };
+                    this.updateAimJoystick(touch.clientX, touch.clientY);
+                });
+                aimJoystick.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (this.touchControls.aimJoystick && this.touchControls.aimJoystick.active) {
+                        const touch = e.touches[0];
+                        this.updateAimJoystick(touch.clientX, touch.clientY);
+                    }
+                });
+                aimJoystick.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    if (this.touchControls.aimJoystick) {
+                        this.touchControls.aimJoystick.active = false;
+                        this.touchControls.aimJoystick.x = 0;
+                        this.touchControls.aimJoystick.y = 0;
+                        if (aimJoystickThumb) {
+                            aimJoystickThumb.style.left = '50%';
+                            aimJoystickThumb.style.top = '50%';
+                        }
+                    }
+                });
+
                 // 발사 버튼 이벤트
                 fireButton.addEventListener('touchstart', (e) => {
                     e.preventDefault();
@@ -7147,6 +7183,27 @@
                 console.log('Joystick:', this.touchControls.joystick.x, this.touchControls.joystick.y);
             };
 
+            updateAimJoystick = (touchX, touchY) => {
+                const dx = touchX - this.touchControls.aimJoystick.centerX;
+                const dy = touchY - this.touchControls.aimJoystick.centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const maxDistance = 50;
+                if (distance > maxDistance) {
+                    const angle = Math.atan2(dy, dx);
+                    this.touchControls.aimJoystick.x = Math.cos(angle) * maxDistance;
+                    this.touchControls.aimJoystick.y = Math.sin(angle) * maxDistance;
+                } else {
+                    this.touchControls.aimJoystick.x = dx;
+                    this.touchControls.aimJoystick.y = dy;
+                }
+                const aimJoystickThumb = document.getElementById('aimJoystickThumb');
+                if (aimJoystickThumb) {
+                    const knobX = 50 + (this.touchControls.aimJoystick.x / maxDistance) * 50;
+                    const knobY = 50 + (this.touchControls.aimJoystick.y / maxDistance) * 50;
+                    aimJoystickThumb.style.left = knobX + '%';
+                    aimJoystickThumb.style.top = knobY + '%';
+                }
+            };
             // 모바일 컨트롤 비활성화
             disableMobileControls = () => {
                 this.touchControls.joystick.active = false;
