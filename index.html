@@ -7010,6 +7010,148 @@
                     }
                 };
             };
+
+            // 모바일 컨트롤 초기화
+            initMobileControls = () => {
+                const joystick = document.getElementById('joystick');
+                const fireButton = document.getElementById('fireButton');
+                const jumpButton = document.getElementById('jumpButton');
+                const reloadButton = document.getElementById('reloadButton');
+                const aimArea = document.getElementById('aimArea');
+
+                // 조이스틱 이벤트
+                joystick.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const rect = joystick.getBoundingClientRect();
+                    this.touchControls.joystick.centerX = rect.left + rect.width / 2;
+                    this.touchControls.joystick.centerY = rect.top + rect.height / 2;
+                    this.touchControls.joystick.active = true;
+                    this.updateJoystick(touch.clientX, touch.clientY);
+                });
+
+                joystick.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (this.touchControls.joystick.active) {
+                        const touch = e.touches[0];
+                        this.updateJoystick(touch.clientX, touch.clientY);
+                    }
+                });
+
+                joystick.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.touchControls.joystick.active = false;
+                    this.touchControls.joystick.x = 0;
+                    this.touchControls.joystick.y = 0;
+                    const joystickKnob = joystick.querySelector('.joystick-knob');
+                    if (joystickKnob) {
+                        joystickKnob.style.left = '50%';
+                        joystickKnob.style.top = '50%';
+                    }
+                });
+
+                // 발사 버튼 이벤트
+                fireButton.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.touchControls.fireButton.pressed = true;
+                });
+
+                fireButton.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.touchControls.fireButton.pressed = false;
+                });
+
+                // 점프 버튼 이벤트
+                jumpButton.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.touchControls.jumpButton.pressed = true;
+                });
+
+                jumpButton.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.touchControls.jumpButton.pressed = false;
+                });
+
+                // 재장전 버튼 이벤트
+                reloadButton.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.touchControls.reloadButton.pressed = true;
+                    if (this.gameState.gameStatus === 'playing') {
+                        this.reload();
+                    }
+                });
+
+                reloadButton.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.touchControls.reloadButton.pressed = false;
+                });
+
+                // 조준 영역 이벤트
+                aimArea.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    this.touchControls.aimArea.x = touch.clientX;
+                    this.touchControls.aimArea.y = touch.clientY;
+                    this.touchControls.aimArea.active = true;
+                });
+
+                aimArea.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (this.touchControls.aimArea.active) {
+                        const touch = e.touches[0];
+                        this.touchControls.aimArea.x = touch.clientX;
+                        this.touchControls.aimArea.y = touch.clientY;
+                    }
+                });
+
+                aimArea.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.touchControls.aimArea.active = false;
+                });
+            };
+
+            // 조이스틱 업데이트
+            updateJoystick = (touchX, touchY) => {
+                const dx = touchX - this.touchControls.joystick.centerX;
+                const dy = touchY - this.touchControls.joystick.centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const maxDistance = 50;
+
+                if (distance > maxDistance) {
+                    const angle = Math.atan2(dy, dx);
+                    this.touchControls.joystick.x = Math.cos(angle) * maxDistance;
+                    this.touchControls.joystick.y = Math.sin(angle) * maxDistance;
+                } else {
+                    this.touchControls.joystick.x = dx;
+                    this.touchControls.joystick.y = dy;
+                }
+
+                const joystickThumb = document.getElementById('joystickThumb');
+                if (joystickThumb) {
+                    const knobX = 50 + (this.touchControls.joystick.x / maxDistance) * 50;
+                    const knobY = 50 + (this.touchControls.joystick.y / maxDistance) * 50;
+                    joystickThumb.style.left = knobX + '%';
+                    joystickThumb.style.top = knobY + '%';
+                }
+            };
+
+            // 모바일 컨트롤 비활성화
+            disableMobileControls = () => {
+                this.touchControls.joystick.active = false;
+                this.touchControls.joystick.x = 0;
+                this.touchControls.joystick.y = 0;
+                this.touchControls.fireButton.pressed = false;
+                this.touchControls.jumpButton.pressed = false;
+                this.touchControls.reloadButton.pressed = false;
+                this.touchControls.aimArea.active = false;
+
+                const joystick = document.getElementById('joystick');
+                const joystickKnob = joystick.querySelector('.joystick-knob');
+                if (joystickKnob) {
+                    joystickKnob.style.left = '50%';
+                    joystickKnob.style.top = '50%';
+                }
+            };
         }
 
         // === Add after GlassCombatArena class definition or at the end of the script ===
@@ -7017,22 +7159,6 @@
           // Hide startScreen, show introScreen
           document.getElementById('startScreen').style.display = 'none';
           document.getElementById('introScreen').style.display = 'flex';
-
-          // 모바일 모드 체크박스 이벤트 리스너
-          const mobileModeCheckbox = document.getElementById('mobileModeCheckbox');
-          mobileModeCheckbox.addEventListener('change', function() {
-              if (window.game) {
-                  window.game.mobileMode = this.checked;
-                  const mobileControls = document.getElementById('mobileControls');
-                  if (this.checked) {
-                      mobileControls.style.display = 'block';
-                      window.game.initMobileControls();
-                  } else {
-                      mobileControls.style.display = 'none';
-                      window.game.disableMobileControls();
-                  }
-              }
-          });
 
           // Attach event listener to Solo Play button
           document.getElementById('soloButton').onclick = function() {
@@ -7143,6 +7269,24 @@
 
         // === GlassCombatArena 클래스 정의 끝난 후 ===
         window.game = new GlassCombatArena();
+
+        // 모바일 모드 체크박스 이벤트 리스너 설정
+        const mobileModeCheckbox = document.getElementById('mobileModeCheckbox');
+        if (mobileModeCheckbox) {
+            mobileModeCheckbox.addEventListener('change', function() {
+                if (window.game) {
+                    window.game.mobileMode = this.checked;
+                    const mobileControls = document.getElementById('mobileControls');
+                    if (this.checked) {
+                        mobileControls.style.display = 'block';
+                        window.game.initMobileControls();
+                    } else {
+                        mobileControls.style.display = 'none';
+                        window.game.disableMobileControls();
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
