@@ -849,7 +849,7 @@
         <!-- 액션 버튼들 - 중앙 하단에 배치 -->
         <div id="actionButtons" style="position:absolute; bottom:30px; left:50%; transform:translateX(-50%); display:flex; flex-direction:row; gap:15px; pointer-events:auto;">
             <button id="jumpButton" class="mobile-button" style="width:60px; height:60px; background:rgba(34,197,94,0.8); border:2px solid rgba(255,255,255,0.3); border-radius:50%; color:#fff; font-size:20px; cursor:pointer; backdrop-filter:blur(10px);">↑</button>
-            <button id="fireButton" class="mobile-button" style="width:80px; height:80px; background:rgba(239,68,68,0.8); border:2px solid rgba(255,255,255,0.3); border-radius:50%; color:#fff; font-size:24px; cursor:pointer; backdrop-filter:blur(10px);">��</button>
+            <button id="fireButton" class="mobile-button" style="width:80px; height:80px; background:rgba(239,68,68,0.8); border:2px solid rgba(255,255,255,0.3); border-radius:50%; color:#fff; font-size:24px; cursor:pointer; backdrop-filter:blur(10px);">●</button>
             <button id="reloadButton" class="mobile-button" style="width:60px; height:60px; background:rgba(59,130,246,0.8); border:2px solid rgba(255,255,255,0.3); border-radius:50%; color:#fff; font-size:18px; cursor:pointer; backdrop-filter:blur(10px);">R</button>
         </div>
     </div>
@@ -1331,7 +1331,24 @@
                         }
                     },
                     ghost: {
-                        name: '유령', health: 20, speed: 6, damage: 10, color: '#a8a29e', size: 25, shootInterval: 2500, points: 200, isInvincible: false, invincibilityDuration: 1000 // 유령 전용 속성
+                        name: '유령', 
+                        health: 20, 
+                        speed: 6, 
+                        damage: 10, 
+                        color: '#a8a29e', 
+                        size: 25, 
+                        shootInterval: 2500, 
+                        points: 200, 
+                        isInvincible: false, 
+                        invincibilityDuration: 1000, // 유령 전용 속성
+                        description: '일시적으로 무적이 되는 능력을 가진 빠른 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['일시 무적', '빠른 이동'],
+                            strategy: '무적 상태일 때는 공격이 통하지 않습니다. 무적이 끝날 때까지 기다리거나 다른 적을 공격하세요.',
+                            weakness: '체력이 매우 낮아 한 번의 공격으로 처치 가능'
+                        }
                     },
                     medic: {
                         name: '치유사', 
@@ -1413,16 +1430,85 @@
                         }
                     },
                     teleporter: {
-                        name: '순간이동병', health: 35, speed: 1, damage: 25, color: '#a78bfa', size: 30, shootInterval: 3500, points: 220, teleportCooldown: 4000, lastTeleport: 0 // 순간이동병 전용 속성
+                        name: '순간이동병', 
+                        health: 35, 
+                        speed: 1, 
+                        damage: 25, 
+                        color: '#a78bfa', 
+                        size: 30, 
+                        shootInterval: 3500, 
+                        points: 220, 
+                        teleportCooldown: 4000, 
+                        lastTeleport: 0, // 순간이동병 전용 속성
+                        description: '순간이동 능력을 가진 적. 갑자기 사라졌다가 다른 위치에서 나타납니다.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['순간이동', '예측 불가능한 위치'],
+                            strategy: '순간이동으로 갑자기 위치를 바꿀 수 있어 회피하기 어려울 수 있습니다. 순간이동 후 공격까지 시간이 필요하니 그 타이밍을 노리세요.',
+                            weakness: '순간이동 후 공격까지 시간이 필요하고 체력이 보통임'
+                        }
                     },
                     drone: {
-                        name: '드론', health: 20, speed: 7, damage: 10, color: '#94a3b8', size: 20, shootInterval: 1000, points: 80, flies: true // 드론 전용 속성
+                        name: '드론', 
+                        health: 20, 
+                        speed: 7, 
+                        damage: 10, 
+                        color: '#94a3b8', 
+                        size: 20, 
+                        shootInterval: 1000, 
+                        points: 80, 
+                        flies: true, // 드론 전용 속성
+                        description: '매우 빠른 속도로 움직이는 소형 적. 공격력은 낮지만 빠른 속도로 위협적입니다.',
+                        dexInfo: {
+                            category: '기본',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['빠른 이동', '빠른 공격'],
+                            strategy: '매우 빠른 속도로 움직이므로 예측하기 어렵습니다. 빠른 반응으로 회피하세요.',
+                            weakness: '체력이 매우 낮아 한 번의 공격으로 처치 가능'
+                        }
                     },
                     spitter: {
-                        name: '슬라임병', health: 50, speed: 1.3, damage: 15, color: '#16a34a', size: 35, shootInterval: 2500, points: 180, slowEffect: 0.5, slowDuration: 3000 // 슬라임병 전용 속성
+                        name: '슬라임병', 
+                        health: 50, 
+                        speed: 1.3, 
+                        damage: 15, 
+                        color: '#16a34a', 
+                        size: 35, 
+                        shootInterval: 2500, 
+                        points: 180, 
+                        slowEffect: 0.5, 
+                        slowDuration: 3000, // 슬라임병 전용 속성
+                        description: '플레이어를 둔화시키는 능력을 가진 적. 맞으면 일정 시간 동안 속도가 느려집니다.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['플레이어 둔화', '지속적인 위협'],
+                            strategy: '둔화 효과로 인해 다른 적들의 공격을 피하기 어려워집니다. 우선 처치하는 것이 좋습니다.',
+                            weakness: '속도가 느리고 체력이 보통임'
+                        }
                     },
                     berserker: {
-                        name: '광전사', health: 60, speed: 3, damage: 20, color: '#be123c', size: 38, shootInterval: 1800, points: 250, rageThreshold: 0.3, rageSpeedBoost: 1.5, rageDamageBoost: 1.5, isRaging: false // 광전사 전용 속성
+                        name: '광전사', 
+                        health: 60, 
+                        speed: 3, 
+                        damage: 20, 
+                        color: '#be123c', 
+                        size: 38, 
+                        shootInterval: 1800, 
+                        points: 250, 
+                        rageThreshold: 0.3, 
+                        rageSpeedBoost: 1.5, 
+                        rageDamageBoost: 1.5, 
+                        isRaging: false, // 광전사 전용 속성
+                        description: '체력이 낮아지면 광분 상태가 되어 속도와 공격력이 증가하는 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['광분 상태', '능력치 증가'],
+                            strategy: '체력이 30% 이하로 떨어지면 광분 상태가 되어 위험해집니다. 광분 상태 전에 처치하세요.',
+                            weakness: '광분 상태 전에는 일반적인 적과 비슷함'
+                        }
                     },
                     // 새로운 보스 타입
                     boss_alpha: {
@@ -1506,69 +1592,451 @@
                     },
                     // === 신규 적 10종 ===
                     mirror: {
-                        name: '미러 적', health: 35, speed: 2.5, damage: 15, color: '#b6e0fe', size: 32, shootInterval: 1800, points: 180, mirrorPlayer: true // 플레이어 움직임 따라함
+                        name: '미러 적', 
+                        health: 35, 
+                        speed: 2.5, 
+                        damage: 15, 
+                        color: '#b6e0fe', 
+                        size: 32, 
+                        shootInterval: 1800, 
+                        points: 180, 
+                        mirrorPlayer: true, // 플레이어 움직임 따라함
+                        description: '플레이어의 움직임을 따라하는 능력을 가진 적. 예측하기 어려운 패턴을 보입니다.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['플레이어 모방', '예측 불가능한 움직임'],
+                            strategy: '플레이어의 움직임을 따라하므로 예측하기 어렵습니다. 패턴을 파악하여 대응하세요.',
+                            weakness: '체력이 낮고 직접적인 공격력은 보통임'
+                        }
                     },
                     leech: {
-                        name: '흡혈 적', health: 30, speed: 2, damage: 10, color: '#a21caf', size: 30, shootInterval: 2000, points: 160, leechAmount: 10 // 닿으면 체력 흡수
+                        name: '흡혈 적', 
+                        health: 30, 
+                        speed: 2, 
+                        damage: 10, 
+                        color: '#a21caf', 
+                        size: 30, 
+                        shootInterval: 2000, 
+                        points: 160, 
+                        leechAmount: 10, // 닿으면 체력 흡수
+                        description: '플레이어와 닿으면 체력을 흡수하는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['체력 흡수', '접촉 공격'],
+                            strategy: '닿으면 체력을 흡수하므로 접촉을 피해야 합니다. 원거리에서 공격하세요.',
+                            weakness: '체력이 낮고 공격력이 낮음'
+                        }
                     },
                     mine: {
-                        name: '지뢰 적', health: 20, speed: 1, damage: 40, color: '#fbbf24', size: 28, shootInterval: 99999, points: 120, explodesOnNear: true, explodeRadius: 60 // 근접 폭발
+                        name: '지뢰 적', 
+                        health: 20, 
+                        speed: 1, 
+                        damage: 40, 
+                        color: '#fbbf24', 
+                        size: 28, 
+                        shootInterval: 99999, 
+                        points: 120, 
+                        explodesOnNear: true, 
+                        explodeRadius: 60, // 근접 폭발
+                        description: '플레이어가 가까이 오면 폭발하는 지뢰형 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['근접 폭발', '높은 폭발 데미지'],
+                            strategy: '가까이 가면 폭발하므로 원거리에서 공격하세요. 폭발 반경을 고려하여 거리를 유지하세요.',
+                            weakness: '체력이 매우 낮고 직접 공격력이 없음'
+                        }
                     },
                     freezer: {
-                        name: '빙결 적', health: 28, speed: 1.7, damage: 12, color: '#38bdf8', size: 30, shootInterval: 2200, points: 150, freezeOnHit: true, freezeDuration: 2000 // 맞으면 빙결
+                        name: '빙결 적', 
+                        health: 28, 
+                        speed: 1.7, 
+                        damage: 12, 
+                        color: '#38bdf8', 
+                        size: 30, 
+                        shootInterval: 2200, 
+                        points: 150, 
+                        freezeOnHit: true, 
+                        freezeDuration: 2000, // 맞으면 빙결
+                        description: '플레이어를 맞추면 빙결시키는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['플레이어 빙결', '이동 제한'],
+                            strategy: '맞으면 빙결되어 움직일 수 없게 됩니다. 회피에 집중하고 우선 처치하세요.',
+                            weakness: '체력이 낮고 공격력이 낮음'
+                        }
                     },
                     reflector: {
-                        name: '반사 적', health: 40, speed: 1.5, damage: 15, color: '#f472b6', size: 34, shootInterval: 2500, points: 200, reflectChance: 0.3 // 30% 확률로 탄환 반사
+                        name: '반사 적', 
+                        health: 40, 
+                        speed: 1.5, 
+                        damage: 15, 
+                        color: '#f472b6', 
+                        size: 34, 
+                        shootInterval: 2500, 
+                        points: 200, 
+                        reflectChance: 0.3, // 30% 확률로 탄환 반사
+                        description: '일정 확률로 탄환을 반사하는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['탄환 반사', '예측 불가능한 공격'],
+                            strategy: '30% 확률로 탄환을 반사하므로 공격할 때 주의해야 합니다. 반사된 탄환을 피하세요.',
+                            weakness: '속도가 느리고 반사 확률이 30%로 제한적임'
+                        }
                     },
                     healer: {
-                        name: '힐러 적', health: 32, speed: 1.2, damage: 0, color: '#bef264', size: 32, shootInterval: 4000, points: 180, healAmount: 15, healRadius: 120, healsOthers: true // 주변 적 회복
+                        name: '힐러 적', 
+                        health: 32, 
+                        speed: 1.2, 
+                        damage: 0, 
+                        color: '#bef264', 
+                        size: 32, 
+                        shootInterval: 4000, 
+                        points: 180, 
+                        healAmount: 15, 
+                        healRadius: 120, 
+                        healsOthers: true, // 주변 적 회복
+                        description: '주변의 다른 적들을 치료하는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '지원',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['적 치료', '지속적인 위협'],
+                            strategy: '다른 적들을 치료하므로 우선 처치해야 합니다. 치료 범위를 벗어나서 공격하세요.',
+                            weakness: '직접 공격력이 없고 체력이 낮음'
+                        }
                     },
                     portal: {
-                        name: '포탈 적', health: 30, speed: 2.2, damage: 13, color: '#818cf8', size: 30, shootInterval: 2000, points: 170, teleportsNearPlayer: true, teleportCooldown: 3000, lastTeleport: 0 // 순간이동
+                        name: '포탈 적', 
+                        health: 30, 
+                        speed: 2.2, 
+                        damage: 13, 
+                        color: '#818cf8', 
+                        size: 30, 
+                        shootInterval: 2000, 
+                        points: 170, 
+                        teleportsNearPlayer: true, 
+                        teleportCooldown: 3000, 
+                        lastTeleport: 0, // 순간이동
+                        description: '플레이어 근처로 순간이동하는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['순간이동', '예측 불가능한 위치'],
+                            strategy: '갑자기 플레이어 근처로 순간이동할 수 있습니다. 순간이동 후 공격까지 시간이 필요하니 그 타이밍을 노리세요.',
+                            weakness: '체력이 낮고 순간이동 후 공격까지 시간이 필요'
+                        }
                     },
                     exploder: {
-                        name: '폭발 적', health: 25, speed: 2, damage: 18, color: '#f87171', size: 28, shootInterval: 99999, points: 140, explodesOnDeath: true, explodeRadius: 70 // 죽으면 폭발
+                        name: '폭발 적', 
+                        health: 25, 
+                        speed: 2, 
+                        damage: 18, 
+                        color: '#f87171', 
+                        size: 28, 
+                        shootInterval: 99999, 
+                        points: 140, 
+                        explodesOnDeath: true, 
+                        explodeRadius: 70, // 죽으면 폭발
+                        description: '죽을 때 폭발하는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['사후 폭발', '광역 데미지'],
+                            strategy: '죽을 때 폭발하므로 다른 적들과 함께 있을 때 주의해야 합니다. 폭발 반경을 고려하여 처치하세요.',
+                            weakness: '체력이 낮고 직접 공격력이 없음'
+                        }
                     },
                     magnet: {
-                        name: '자석 적', health: 30, speed: 1.8, damage: 10, color: '#fde047', size: 30, shootInterval: 2000, points: 160, pullsItems: true, magnetRadius: 180 // 아이템 끌어당김
+                        name: '자석 적', 
+                        health: 30, 
+                        speed: 1.8, 
+                        damage: 10, 
+                        color: '#fde047', 
+                        size: 30, 
+                        shootInterval: 2000, 
+                        points: 160, 
+                        pullsItems: true, 
+                        magnetRadius: 180, // 아이템 끌어당김
+                        description: '주변의 아이템을 끌어당기는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['아이템 흡수', '자원 제한'],
+                            strategy: '아이템을 끌어당기므로 아이템을 얻기 어려워집니다. 우선 처치하여 아이템을 확보하세요.',
+                            weakness: '체력이 낮고 공격력이 낮음'
+                        }
                     },
                     curse: {
-                        name: '저주 적', health: 28, speed: 1.6, damage: 10, color: '#a3a3a3', size: 30, shootInterval: 2200, points: 170, cursesPlayer: true, curseDuration: 2500 // 맞추면 디버프
+                        name: '저주 적', 
+                        health: 28, 
+                        speed: 1.6, 
+                        damage: 10, 
+                        color: '#a3a3a3', 
+                        size: 30, 
+                        shootInterval: 2200, 
+                        points: 170, 
+                        cursesPlayer: true, 
+                        curseDuration: 2500, // 맞추면 디버프
+                        description: '플레이어를 맞추면 저주를 걸어 디버프를 주는 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['플레이어 저주', '디버프 공격'],
+                            strategy: '맞으면 저주 효과로 인해 능력치가 감소합니다. 회피에 집중하고 우선 처치하세요.',
+                            weakness: '체력이 낮고 공격력이 낮음'
+                        }
                     },
                     floater: {
-                        name: '플로터', health: 35, speed: 2.5, damage: 15, color: '#8b5cf6', size: 32, shootInterval: 2000, points: 180, flies: true, floatDirection: 0, lastDirectionChange: 0 // 자유로운 움직임
+                        name: '플로터', 
+                        health: 35, 
+                        speed: 2.5, 
+                        damage: 15, 
+                        color: '#8b5cf6', 
+                        size: 32, 
+                        shootInterval: 2000, 
+                        points: 180, 
+                        flies: true, 
+                        floatDirection: 0, 
+                        lastDirectionChange: 0, // 자유로운 움직임
+                        description: '자유롭게 움직이는 능력을 가진 적. 예측하기 어려운 패턴을 보입니다.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['자유로운 움직임', '예측 불가능한 패턴'],
+                            strategy: '자유롭게 움직이므로 예측하기 어렵습니다. 패턴을 파악하여 대응하세요.',
+                            weakness: '체력이 보통이고 직접적인 특수 능력이 제한적임'
+                        }
                     },
                     phaser: {
-                        name: '페이저', health: 40, speed: 2, damage: 20, color: '#06b6d4', size: 35, shootInterval: 1800, points: 200, phaseCooldown: 8000, lastPhase: 0, phaseDuration: 2000, isPhasing: false // 페이즈 스킬
+                        name: '페이저', 
+                        health: 40, 
+                        speed: 2, 
+                        damage: 20, 
+                        color: '#06b6d4', 
+                        size: 35, 
+                        shootInterval: 1800, 
+                        points: 200, 
+                        phaseCooldown: 8000, 
+                        lastPhase: 0, 
+                        phaseDuration: 2000, 
+                        isPhasing: false, // 페이즈 스킬
+                        description: '일정 시간 동안 페이즈 상태가 되어 무적이 되는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['페이즈 무적', '일시적 보호'],
+                            strategy: '페이즈 상태일 때는 공격이 통하지 않습니다. 페이즈가 끝날 때까지 기다리거나 다른 적을 공격하세요.',
+                            weakness: '페이즈 상태가 아닐 때는 일반적인 적과 비슷함'
+                        }
                     },
                     // === 완전히 새로운 적 10종 추가 ===
                     timekeeper: {
-                        name: '타임키퍼', health: 50, speed: 2.0, damage: 20, color: '#ff6b9d', size: 35, shootInterval: 2000, points: 280, timeReverse: true, timeReverseCooldown: 12000, lastTimeReverse: 0, timeReverseDuration: 3000, isTimeReversed: false // 시간 역행
+                        name: '타임키퍼', 
+                        health: 50, 
+                        speed: 2.0, 
+                        damage: 20, 
+                        color: '#ff6b9d', 
+                        size: 35, 
+                        shootInterval: 2000, 
+                        points: 280, 
+                        timeReverse: true, 
+                        timeReverseCooldown: 12000, 
+                        lastTimeReverse: 0, 
+                        timeReverseDuration: 3000, 
+                        isTimeReversed: false, // 시간 역행
+                        description: '시간을 역행시켜 체력을 회복하는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['시간 역행', '체력 회복'],
+                            strategy: '시간 역행으로 체력을 회복할 수 있습니다. 회복 전에 처치하거나 회복 후 다시 공격하세요.',
+                            weakness: '시간 역행 쿨다운이 길고 일반 상태에서는 보통임'
+                        }
                     },
                     gravity: {
-                        name: '그래비티', health: 45, speed: 1.8, damage: 18, color: '#9d4edd', size: 38, shootInterval: 2500, points: 260, gravityField: true, gravityCooldown: 8000, lastGravity: 0, gravityRadius: 200, gravityStrength: 0.8 // 중력장 생성
+                        name: '그래비티', 
+                        health: 45, 
+                        speed: 1.8, 
+                        damage: 18, 
+                        color: '#9d4edd', 
+                        size: 38, 
+                        shootInterval: 2500, 
+                        points: 260, 
+                        gravityField: true, 
+                        gravityCooldown: 8000, 
+                        lastGravity: 0, 
+                        gravityRadius: 200, 
+                        gravityStrength: 0.8, // 중력장 생성
+                        description: '중력장을 생성하여 플레이어를 끌어당기는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['중력장', '플레이어 끌어당김'],
+                            strategy: '중력장으로 플레이어를 끌어당기므로 다른 적들의 공격을 피하기 어려워집니다. 중력장 범위를 벗어나세요.',
+                            weakness: '중력장 쿨다운이 길고 일반 상태에서는 보통임'
+                        }
                     },
                     echo: {
-                        name: '에코', health: 40, speed: 2.2, damage: 15, color: '#4cc9f0', size: 32, shootInterval: 1800, points: 240, echoShot: true, echoCount: 3, echoDelay: 500, lastEcho: 0 // 에코 발사
+                        name: '에코', 
+                        health: 40, 
+                        speed: 2.2, 
+                        damage: 15, 
+                        color: '#4cc9f0', 
+                        size: 32, 
+                        shootInterval: 1800, 
+                        points: 240, 
+                        echoShot: true, 
+                        echoCount: 3, 
+                        echoDelay: 500, 
+                        lastEcho: 0, // 에코 발사
+                        description: '에코 효과로 여러 발의 탄환을 연속으로 발사하는 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['에코 발사', '연속 공격'],
+                            strategy: '에코로 여러 발의 탄환을 연속으로 발사합니다. 탄환의 타이밍을 파악하여 회피하세요.',
+                            weakness: '체력이 보통이고 에코 발사 후 공격까지 시간이 필요'
+                        }
                     },
                     vortex: {
-                        name: '보르텍스', health: 55, speed: 1.5, damage: 25, color: '#7209b7', size: 40, shootInterval: 3000, points: 320, vortexPull: true, vortexCooldown: 10000, lastVortex: 0, vortexRadius: 250, vortexStrength: 2.0 // 소용돌이 끌어당김
+                        name: '보르텍스', 
+                        health: 55, 
+                        speed: 1.5, 
+                        damage: 25, 
+                        color: '#7209b7', 
+                        size: 40, 
+                        shootInterval: 3000, 
+                        points: 320, 
+                        vortexPull: true, 
+                        vortexCooldown: 10000, 
+                        lastVortex: 0, 
+                        vortexRadius: 250, 
+                        vortexStrength: 2.0, // 소용돌이 끌어당김
+                        description: '소용돌이를 생성하여 플레이어를 강하게 끌어당기는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['소용돌이', '강한 끌어당김'],
+                            strategy: '소용돌이로 강하게 끌어당기므로 다른 적들의 공격을 피하기 어려워집니다. 소용돌이 범위를 벗어나세요.',
+                            weakness: '소용돌이 쿨다운이 길고 일반 상태에서는 보통임'
+                        }
                     },
                     prism: {
-                        name: '프리즘', health: 35, speed: 2.5, damage: 12, color: '#f72585', size: 30, shootInterval: 1600, points: 220, prismSplit: true, prismCount: 5, prismAngle: Math.PI/3, lastPrism: 0 // 프리즘 분산
+                        name: '프리즘', 
+                        health: 35, 
+                        speed: 2.5, 
+                        damage: 12, 
+                        color: '#f72585', 
+                        size: 30, 
+                        shootInterval: 1600, 
+                        points: 220, 
+                        prismSplit: true, 
+                        prismCount: 5, 
+                        prismAngle: Math.PI/3, 
+                        lastPrism: 0, // 프리즘 분산
+                        description: '프리즘 효과로 탄환을 여러 방향으로 분산시키는 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★☆☆☆',
+                            abilities: ['프리즘 분산', '다방향 공격'],
+                            strategy: '프리즘으로 탄환을 여러 방향으로 분산시킵니다. 분산된 탄환들을 모두 피해야 합니다.',
+                            weakness: '체력이 낮고 개별 탄환의 데미지가 낮음'
+                        }
                     },
                     quantum: {
-                        name: '퀀텀', health: 60, speed: 2.8, damage: 30, color: '#3a0ca3', size: 36, shootInterval: 2200, points: 300, quantumTeleport: true, quantumCooldown: 6000, lastQuantum: 0, quantumRange: 300 // 양자 순간이동
+                        name: '퀀텀', 
+                        health: 60, 
+                        speed: 2.8, 
+                        damage: 30, 
+                        color: '#3a0ca3', 
+                        size: 36, 
+                        shootInterval: 2200, 
+                        points: 300, 
+                        quantumTeleport: true, 
+                        quantumCooldown: 6000, 
+                        lastQuantum: 0, 
+                        quantumRange: 300, // 양자 순간이동
+                        description: '양자 순간이동 능력을 가진 적. 갑자기 사라졌다가 다른 위치에서 나타납니다.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['양자 순간이동', '예측 불가능한 위치'],
+                            strategy: '양자 순간이동으로 갑자기 위치를 바꿀 수 있어 회피하기 어려울 수 있습니다. 순간이동 후 공격까지 시간이 필요하니 그 타이밍을 노리세요.',
+                            weakness: '순간이동 후 공격까지 시간이 필요하고 체력이 보통임'
+                        }
                     },
                     crystal: {
-                        name: '크리스탈', health: 70, speed: 1.2, damage: 35, color: '#4361ee', size: 45, shootInterval: 3500, points: 350, crystalShield: true, crystalCooldown: 15000, lastCrystal: 0, crystalDuration: 5000, isCrystalShielded: false // 크리스탈 방패
+                        name: '크리스탈', 
+                        health: 70, 
+                        speed: 1.2, 
+                        damage: 35, 
+                        color: '#4361ee', 
+                        size: 45, 
+                        shootInterval: 3500, 
+                        points: 350, 
+                        crystalShield: true, 
+                        crystalCooldown: 15000, 
+                        lastCrystal: 0, 
+                        crystalDuration: 5000, 
+                        isCrystalShielded: false, // 크리스탈 방패
+                        description: '크리스탈 방패를 생성하여 일정 시간 동안 무적이 되는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['크리스탈 방패', '일시적 무적'],
+                            strategy: '크리스탈 방패 상태일 때는 공격이 통하지 않습니다. 방패가 끝날 때까지 기다리거나 다른 적을 공격하세요.',
+                            weakness: '크리스탈 방패 쿨다운이 매우 길고 일반 상태에서는 보통임'
+                        }
                     },
 
                     plasma: {
-                        name: '플라즈마', health: 48, speed: 2.1, damage: 28, color: '#06ffa5', size: 34, shootInterval: 1900, points: 270, plasmaChain: true, plasmaChainCount: 4, plasmaChainRange: 150, lastPlasma: 0 // 플라즈마 체인
+                        name: '플라즈마', 
+                        health: 48, 
+                        speed: 2.1, 
+                        damage: 28, 
+                        color: '#06ffa5', 
+                        size: 34, 
+                        shootInterval: 1900, 
+                        points: 270, 
+                        plasmaChain: true, 
+                        plasmaChainCount: 4, 
+                        plasmaChainRange: 150, 
+                        lastPlasma: 0, // 플라즈마 체인
+                        description: '플라즈마 체인과 폭발 능력을 가진 특수 적. 연쇄 공격으로 위험합니다.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['플라즈마 체인', '플라즈마 폭발'],
+                            strategy: '플라즈마 체인으로 연쇄 공격을 할 수 있습니다. 체인 범위를 벗어나거나 체인을 끊어주세요.',
+                            weakness: '체력이 보통이고 체인 공격 후 공격까지 시간이 필요'
+                        }
                     },
                     nebula: {
-                        name: '네뷸라', health: 65, speed: 1.6, damage: 32, color: '#ff9e00', size: 42, shootInterval: 2800, points: 340, nebulaCloud: true, nebulaCooldown: 12000, lastNebula: 0, nebulaRadius: 180, nebulaDamage: 8 // 네뷸라 구름
+                        name: '네뷸라', 
+                        health: 65, 
+                        speed: 1.6, 
+                        damage: 32, 
+                        color: '#ff9e00', 
+                        size: 42, 
+                        shootInterval: 2800, 
+                        points: 340, 
+                        nebulaCloud: true, 
+                        nebulaCooldown: 12000, 
+                        lastNebula: 0, 
+                        nebulaRadius: 180, 
+                        nebulaDamage: 8, // 네뷸라 구름
+                        description: '네뷸라 구름을 생성하여 지속적인 데미지를 주는 능력을 가진 적.',
+                        dexInfo: {
+                            category: '특수',
+                            difficulty: '★★★☆☆',
+                            abilities: ['네뷸라 구름', '지속 데미지'],
+                            strategy: '네뷸라 구름으로 지속적인 데미지를 줍니다. 구름 범위를 벗어나거나 구름이 사라질 때까지 기다리세요.',
+                            weakness: '네뷸라 구름 쿨다운이 길고 일반 상태에서는 보통임'
+                        }
                     },
                     // === 신규 보스 5종 ===
                     boss_delta: {
@@ -3186,6 +3654,11 @@
                         // 조준 조이스틱
                         if (this.touchControls.aimJoystick && (this.touchControls.aimJoystick.x !== 0 || this.touchControls.aimJoystick.y !== 0)) {
                             character.facing = Math.atan2(this.touchControls.aimJoystick.y, this.touchControls.aimJoystick.x);
+                        } else {
+                            // 마우스/터치 방향으로 플레이어 바라보게 설정 (조이스틱이 비활성일 때만)
+                            const dx = this.mouse.x - (character.x + character.width / 2);
+                            const dy = this.mouse.y - (character.y + character.height / 2);
+                            character.facing = Math.atan2(dy, dx);
                         }
                         // 점프 버튼
                         if (this.touchControls.jumpButton.pressed && character.onGround) {
@@ -7127,6 +7600,7 @@
 
                 // 조준 영역 이벤트
             };
+
             // 조이스틱 업데이트
             updateJoystick = (touchX, touchY) => {
                 const dx = touchX - this.touchControls.joystick.centerX;
