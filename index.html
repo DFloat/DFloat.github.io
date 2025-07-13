@@ -1074,9 +1074,10 @@
                 this.mouse = { x: 0, y: 0 }; // 마우스 현재 위치
                 
                 // 모바일 모드 관련 변수
-                this.mobileMode = false; // 모바일 모드 활성화 여부
+                this.mobileMode =  false; // 모바일 모드 활성화 여부
                 this.touchControls = {
                     joystick: { x: 0, y: 0, active: false, centerX: 0, centerY: 0 },
+                    aimJoystick: { x: 0, y: 0, active: false, centerX: 0, centerY: 0 },
                     fireButton: { pressed: false },
                     jumpButton: { pressed: false },
                     reloadButton: { pressed: false },
@@ -7195,7 +7196,6 @@
 
         // === Add after GlassCombatArena class definition or at the end of the script ===
         window.onload = function() {
-          // Hide startScreen, show introScreen
           document.getElementById('startScreen').style.display = 'none';
           document.getElementById('introScreen').style.display = 'flex';
 
