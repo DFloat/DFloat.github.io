@@ -3426,6 +3426,16 @@
             
             // 웨이브 생성 (새로운 보스 시스템)
             spawnInitialWave = () => {
+                if (typeof bossRushMode !== 'undefined' && bossRushMode) {
+                    const bossTypes = [
+                        'boss_alpha','boss_beta','boss_gamma','boss_delta','boss_epsilon','boss_zeta','boss_eta','boss_theta'
+                    ];
+                    const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
+                    const bossData = this.ENEMY_TYPES[bossType];
+                    this.showMessage(`${bossData.name} 등장!`, '보스 러시!', 2000);
+                    this.gameState.enemies.push(this.createEnemy(bossType));
+                    return;
+                }
 
                 if (typeof bossRushMode !== 'undefined' && bossRushMode) {
                     // 보스 러시 모드: 매 웨이브마다 보스만 등장
@@ -7706,16 +7716,16 @@
             };
         }
 
+        let bossRushMode = false;
+
+
         // === Add after GlassCombatArena class definition or at the end of the script ===
         window.onload = function() {
-
-            // 솔로 모드 선택 팝업 버튼 이벤트 리스너 추가
             const soloModeSelect = document.getElementById('soloModeSelect');
             const normalModeButton = document.getElementById('normalModeButton');
             const bossRushModeButton = document.getElementById('bossRushModeButton');
             const backToIntroFromSolo = document.getElementById('backToIntroFromSolo');
             const introScreen = document.getElementById('introScreen');
-            let bossRushMode = false;
 
             document.getElementById('soloButton').onclick = function() {
             introScreen.style.display = 'none';
