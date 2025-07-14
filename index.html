@@ -981,6 +981,16 @@
         </div>
     </div>
 
+    <!-- 솔로 모드 선택 팝업 -->
+    <div id="soloModeSelect" class="glass-card" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:210; min-width:340px;">
+        <h2 style="text-align:center; margin-bottom:20px; color:#fff;">솔로 모드 선택</h2>
+        <div style="display:flex; flex-direction:column; gap:15px;">
+            <button id="normalModeButton" class="mode-button" style="background:rgba(99, 102, 241, 0.8); border:none; border-radius:8px; padding:15px; color:#fff; cursor:pointer; text-align:left; font-size:1.1em;">일반 모드</button>
+            <button id="bossRushModeButton" class="mode-button" style="background:rgba(239, 68, 68, 0.8); border:none; border-radius:8px; padding:15px; color:#fff; cursor:pointer; text-align:left; font-size:1.1em;">보스 러시 모드</button>
+            <button id="backToIntroFromSolo" class="back-button" style="background:rgba(255,255,255,0.2); border:none; border-radius:6px; padding:10px; color:#fff; cursor:pointer;">← 뒤로가기</button>
+        </div>
+    </div>
+
     <script>
         // GlassCombatArena 게임 클래스 정의
         class GlassCombatArena {
@@ -3416,6 +3426,18 @@
             
             // 웨이브 생성 (새로운 보스 시스템)
             spawnInitialWave = () => {
+
+                if (typeof bossRushMode !== 'undefined' && bossRushMode) {
+                    // 보스 러시 모드: 매 웨이브마다 보스만 등장
+                    const bossTypes = [
+                        'boss_alpha','boss_beta','boss_gamma','boss_delta','boss_epsilon','boss_zeta','boss_eta','boss_theta'
+                    ];
+                    const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
+                    const bossData = this.ENEMY_TYPES[bossType];
+                    this.showMessage(`${bossData.name} 등장!`, '보스 러시!', 2000);
+                    this.gameState.enemies.push(this.createEnemy(bossType));
+                    return;
+                }
                 if (this.gameState.gameStatus !== 'spawning') return;
                 
                 // 테스팅 존에서는 자동 소환 안함
@@ -7692,9 +7714,7 @@
           // Attach event listener to Solo Play button
           document.getElementById('soloButton').onclick = function() {
             document.getElementById('introScreen').style.display = 'none';
-            if (window.game && typeof window.game.startGame === 'function') {
-              window.game.startGame();
-            }
+            document.getElementById('soloModeSelect').style.display = 'flex';
           };
           
           // 멀티플레이 버튼 클릭 시 멀티플레이 모드 선택 화면 표시
