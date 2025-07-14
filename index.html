@@ -3222,8 +3222,8 @@
                                     if (this.bossSystem && this.bossSystem.currentBoss && this.bossSystem.currentBoss.id === enemy.id) {
                                         this.bossSystem.currentBoss = null;
                                     }
+                                    this.checkBossWaveComplete(); // ← 먼저 호출
                                     this.resetBossSystem();
-                                    this.checkBossWaveComplete();
                                 }
                                 
                                 this.gameState.enemies = this.gameState.enemies.filter(e => e !== enemy);
@@ -5057,8 +5057,8 @@
                                         if (this.bossSystem && this.bossSystem.currentBoss && this.bossSystem.currentBoss.id === enemy.id) {
                                             this.bossSystem.currentBoss = null;
                                         }
+                                        this.checkBossWaveComplete(); // ← 먼저 호출
                                         this.resetBossSystem();
-                                        this.checkBossWaveComplete();
                                     }
                                     // =========================
                                     this.gameState.enemies = this.gameState.enemies.filter(e => e !== enemy);
@@ -6742,8 +6742,8 @@
                                     if (this.bossSystem && this.bossSystem.currentBoss && this.bossSystem.currentBoss.id === enemy.id) {
                                         this.bossSystem.currentBoss = null;
                                     }
+                                    this.checkBossWaveComplete(); // ← 먼저 호출
                                     this.resetBossSystem();
-                                    this.checkBossWaveComplete();
                                 }
                                 // =========================
                                 this.gameState.enemies = this.gameState.enemies.filter(e => e !== enemy);
