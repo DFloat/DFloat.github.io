@@ -5047,13 +5047,20 @@
                                 if (enemy.health <= 0) {
                                     this.addScore(enemy.points || 100);
                                     if (Math.random() < 0.4) this.gameState.items.push(this.createItem(enemy.x, enemy.y));
-                                    
                                     // 폭발 적 사망 시 폭발
                                     if (enemy.type === 'exploder') {
                                         this.createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.explodeRadius || 70, enemy.damage, enemy.id);
                                         this.createFloatingText(enemy.x + enemy.width/2, enemy.y-20, '폭발!', 'orange');
                                     }
-                                    
+                                    // === 보스 사망 처리 추가 ===
+                                    if (enemy.type && enemy.type.startsWith('boss')) {
+                                        if (this.bossSystem && this.bossSystem.currentBoss && this.bossSystem.currentBoss.id === enemy.id) {
+                                            this.bossSystem.currentBoss = null;
+                                        }
+                                        this.resetBossSystem();
+                                        this.checkBossWaveComplete();
+                                    }
+                                    // =========================
                                     this.gameState.enemies = this.gameState.enemies.filter(e => e !== enemy);
                                 }
                                 projectilesToRemove.add(i);
@@ -6730,6 +6737,15 @@
                             if (enemy.health <= 0) {
                                 this.addScore(enemy.points);
                                 if (Math.random() < 0.4) this.gameState.items.push(this.createItem(enemy.x, enemy.y));
+                                // === 보스 사망 처리 추가 ===
+                                if (enemy.type && enemy.type.startsWith('boss')) {
+                                    if (this.bossSystem && this.bossSystem.currentBoss && this.bossSystem.currentBoss.id === enemy.id) {
+                                        this.bossSystem.currentBoss = null;
+                                    }
+                                    this.resetBossSystem();
+                                    this.checkBossWaveComplete();
+                                }
+                                // =========================
                                 this.gameState.enemies = this.gameState.enemies.filter(e => e !== enemy);
                                 return false; // 적 제거
                             }
