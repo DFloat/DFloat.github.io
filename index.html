@@ -817,18 +817,17 @@
     </div>
 
     <!-- 인트로 화면: 솔로/함께 플레이/테스팅 존 선택 -->
-    <div id="introScreen" class="glass-card" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:340px; min-height:280px;">
+    <div id="introScreen" class="glass-card" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:340px; min-height:280px;">
         <h1 style="font-size:2.5em; margin-bottom:18px;">글래스 컴뱃 아레나</h1>
-        
-        <!-- 모바일 모드 체크박스 -->
+        <div class="reward-options" style="margin-bottom:20px;">
+            <button id="soloButton" class="reward-button" style="min-width:200px;">솔로 플레이</button>
+            <button id="multiButton" class="reward-button" style="min-width:200px;">함께 플레이</button>
+            <button id="testZoneButton" class="reward-button" style="min-width:200px;">테스팅 존</button>
+        </div>
         <div style="margin-bottom:15px; display:flex; align-items:center; gap:8px;">
             <input type="checkbox" id="mobileModeCheckbox" style="width:18px; height:18px; cursor:pointer;">
             <label for="mobileModeCheckbox" style="color:#fff; font-size:1.1em; cursor:pointer;">📱 모바일 모드</label>
         </div>
-        
-        <button id="soloButton" style="margin:10px 0; padding:14px 36px; font-size:1.2em; border-radius:10px; border:none; background:#6366f1; color:white; cursor:pointer;">솔로 플레이</button>
-        <button id="multiButton" style="margin:10px 0; padding:14px 36px; font-size:1.2em; border-radius:10px; border:none; background:#22c55e; color:white; cursor:pointer;">함께 플레이</button>
-        <button id="testZoneButton" style="margin:10px 0; padding:14px 36px; font-size:1.2em; border-radius:10px; border:none; background:#ff6b6b; color:white; cursor:pointer;">테스팅 존</button>
         <div id="multiInfo" style="display:none; color:#fff; margin-top:18px; font-size:1.1em;">함께 플레이(온라인)는 추후 지원 예정입니다.</div>
     </div>
 
