@@ -7708,6 +7708,39 @@
 
         // === Add after GlassCombatArena class definition or at the end of the script ===
         window.onload = function() {
+
+            // 솔로 모드 선택 팝업 버튼 이벤트 리스너 추가
+            const soloModeSelect = document.getElementById('soloModeSelect');
+            const normalModeButton = document.getElementById('normalModeButton');
+            const bossRushModeButton = document.getElementById('bossRushModeButton');
+            const backToIntroFromSolo = document.getElementById('backToIntroFromSolo');
+            const introScreen = document.getElementById('introScreen');
+            let bossRushMode = false;
+
+            document.getElementById('soloButton').onclick = function() {
+            introScreen.style.display = 'none';
+            soloModeSelect.style.display = 'flex';
+            };
+            normalModeButton.onclick = function() {
+            bossRushMode = false;
+            soloModeSelect.style.display = 'none';
+            if (window.game && typeof window.game.startGame === 'function') {
+                window.game.startGame();
+            }
+            };
+            bossRushModeButton.onclick = function() {
+            bossRushMode = true;
+            soloModeSelect.style.display = 'none';
+            if (window.game && typeof window.game.startGame === 'function') {
+                window.game.startGame();
+            }
+            };
+            backToIntroFromSolo.onclick = function() {
+            soloModeSelect.style.display = 'none';
+            introScreen.style.display = 'flex';
+            };
+
+
           document.getElementById('startScreen').style.display = 'none';
           document.getElementById('introScreen').style.display = 'flex';
 
