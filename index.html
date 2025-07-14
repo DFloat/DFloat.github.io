@@ -5819,17 +5819,15 @@
                     this.bossSystem.currentBoss = null;
                     this.bossSystem.spawnLock = false;
                 }
-                
+                this.gameState.gameStatus = 'playing'; // 혹시라도 상태가 꼬였을 때 복구
                 // 보스 체력바 숨기기
                 const bossBarContainer = document.getElementById('bossBarContainer');
                 if (bossBarContainer) {
                     bossBarContainer.style.display = 'none';
                 }
-                
-                // 보스 처치 메시지
                 this.showMessage('보스 처치!', '훌륭한 전투였습니다!', 2000);
             }
-            
+                        
             // 게임 오버 처리
             gameOver = () => {
                 this.gameState.gameStatus = 'game-over'; // 게임 상태를 '게임 오버'로 변경
