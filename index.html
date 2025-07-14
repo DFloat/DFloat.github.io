@@ -5764,8 +5764,9 @@
             
             // 보스 웨이브 완료 체크
             checkBossWaveComplete = () => {
-                // 보스가 죽었고, 다른 적도 없고, 게임이 진행 중일 때
-                if (this.bossSystem && this.bossSystem.isActive && !this.bossSystem.currentBoss && this.gameState.enemies.length === 0 && this.gameState.gameStatus === 'playing') {
+                // 보스가 모두 죽었고, 게임이 진행 중일 때
+                const bossCount = this.gameState.enemies.filter(e => e.type && e.type.startsWith('boss')).length;
+                if (this.bossSystem && this.bossSystem.isActive && bossCount === 0 && this.gameState.gameStatus === 'playing') {
                     this.completeWave();
                 }
             }
