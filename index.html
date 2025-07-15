@@ -7761,46 +7761,78 @@
             let myState = { x: 100, y: 100, health: 100 };
             let otherPlayers = {};
 
-            // 멀티플레이 버튼 클릭 시 방 입장 팝업 표시
             multiButton.onclick = function() {
-            introScreen.style.display = 'none';
-            multiJoinPopup.style.display = 'block';
-            };
-            multiJoinCancel.onclick = function() {
-            multiJoinPopup.style.display = 'none';
-            introScreen.style.display = 'flex';
-            };
+                introScreen.style.display = 'none';
+                multiJoinPopup.style.display = 'block';
+                // 멀티플레이 모드 선택/설정 UI 숨김
+                document.getElementById('multiplayerModeSelect').style.display = 'none';
+                document.getElementById('leaderSetup').style.display = 'none';
+                document.getElementById('hybridSetup').style.display = 'none';
+                };
+                multiJoinCancel.onclick = function() {
+                multiJoinPopup.style.display = 'none';
+                introScreen.style.display = 'flex';
+                };
+
+
             multiJoinBtn.onclick = function() {
-            myNick = document.getElementById('multiNickname').value.trim();
-            roomId = document.getElementById('multiRoomId').value.trim();
-            if (!myNick || !roomId) return alert("닉네임과 방 코드를 입력하세요!");
-            multiJoinPopup.style.display = 'none';
-            // 내 상태 DB에 등록
-            db.ref(`rooms/${roomId}/players/${myNick}`).set(myState);
-            // 상대방 상태 실시간 감지
-            db.ref(`rooms/${roomId}/players`).on('value', (snap) => {
-                const players = snap.val() || {};
-                otherPlayers = {};
-                Object.keys(players).forEach(nick => {
-                if (nick !== myNick) {
-                    otherPlayers[nick] = players[nick];
-                }
-                });
-                // TODO: otherPlayers의 상태를 게임 화면에 반영 (캐릭터 위치/체력 등)
-            });
-            // 내 상태를 주기적으로 DB에 반영 (예: 0.1초마다)
-            setInterval(() => {
-                // TODO: myState를 내 캐릭터의 실제 위치/체력 등으로 갱신
-                // 예: myState.x = player.x; myState.y = player.y; myState.health = player.health;
+                myNick = document.getElementById('multiNickname').value.trim();
+                roomId = document.getElementById('multiRoomId').value.trim();
+                if (!myNick || !roomId) return alert("닉네임과 방 코드를 입력하세요!");
+                multiJoinPopup.style.display = 'none';
+
+                // 내 상태 DB에 등록
                 db.ref(`rooms/${roomId}/players/${myNick}`).set(myState);
-            }, 100);
-            };
+
+                // 상대방 상태 실시간 감지
+                db.ref(`rooms/${roomId}/players`).on('value', (snap) => {
+                    const players = snap.val() || {};
+                    otherPlayers = {};
+                    Object.keys(players).forEach(nick => {
+                    if (nick !== myNick) {
+                        otherPlayers[nick] = players[nick];
+                    }
+                    });
+                    // === 실제 게임 오브젝트에 반영 ===
+                    // 상대방이 있으면 player2로, 없으면 player2 숨김
+                    const otherNicks = Object.keys(otherPlayers);
+                    if (otherNicks.length > 0) {
+                    const other = otherPlayers[otherNicks[0]];
+                    if (!window.game.gameState.player2) {
+                        // player2 객체 생성 (게임 구조에 맞게)
+                        window.game.gameState.player2 = {
+                        x: other.x, y: other.y, width: 40, height: 40, health: other.health, maxHealth: 100, color: '#ef4444', type: 'player2',
+                        ammo: 30, maxAmmo: 30, speed: 5, baseDamage: 10, multishot: 1
+                        };
+                        document.getElementById('player2HUD').style.display = 'flex';
+                    } else {
+                        window.game.gameState.player2.x = other.x;
+                        window.game.gameState.player2.y = other.y;
+                        window.game.gameState.player2.health = other.health;
+                    }
+                    } else {
+                    window.game.gameState.player2 = null;
+                    document.getElementById('player2HUD').style.display = 'none';
+                    }
+                });
+
+                // 내 상태를 주기적으로 DB에 반영 (0.1초마다)
+                if (window.syncInterval) clearInterval(window.syncInterval);
+                window.syncInterval = setInterval(() => {
+                    if (window.game && window.game.gameState && window.game.gameState.player) {
+                    myState.x = window.game.gameState.player.x;
+                    myState.y = window.game.gameState.player.y;
+                    myState.health = window.game.gameState.player.health;
+                    db.ref(`rooms/${roomId}/players/${myNick}`).set(myState);
+                    }
+                }, 100);
+                };
             // 방 나가기(새로고침/닫기 시 내 데이터 삭제)
             window.addEventListener('beforeunload', function() {
-            if (myNick && roomId) {
-                db.ref(`rooms/${roomId}/players/${myNick}`).remove();
-            }
-            });
+                if (myNick && roomId) {
+                    db.ref(`rooms/${roomId}/players/${myNick}`).remove();
+                }
+                });
 
             document.getElementById('soloButton').onclick = function() {
             introScreen.style.display = 'none';
