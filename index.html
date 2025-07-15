@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <!-- Firebase SDK 및 설정 -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBGKn7TDPIQL9E0_IQhWs2NYuqe1jy27P0",
+        authDomain: "glasscombatarena.firebaseapp.com",
+        databaseURL: "https://glasscombatarena-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "glasscombatarena",
+        storageBucket: "glasscombatarena.firebasestorage.app",
+        messagingSenderId: "678597065462",
+        appId: "1:678597065462:web:36b0420611e79bf041cad7",
+        measurementId: "G-F2PQDZPDBL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>글래스 컴뱃 아레나</title>
@@ -829,6 +846,14 @@
             <label for="mobileModeCheckbox" style="color:#fff; font-size:1.1em; cursor:pointer;">📱 모바일 모드</label>
         </div>
         <div id="multiInfo" style="display:none; color:#fff; margin-top:18px; font-size:1.1em;">함께 플레이(온라인)는 추후 지원 예정입니다.</div>
+    </div>
+
+    <div id="multiJoinPopup" class="glass-card" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:300;">
+        <h2>온라인 방 입장</h2>
+        <input id="multiNickname" placeholder="닉네임" style="margin-bottom:8px; width:90%;" />
+        <input id="multiRoomId" placeholder="방 코드(아무거나)" style="margin-bottom:8px; width:90%;" />
+        <button id="multiJoinBtn">입장</button>
+        <button id="multiJoinCancel">취소</button>
     </div>
 
     <div id="mobileControls" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:100; pointer-events:none;">
@@ -7725,6 +7750,57 @@
             const bossRushModeButton = document.getElementById('bossRushModeButton');
             const backToIntroFromSolo = document.getElementById('backToIntroFromSolo');
             const introScreen = document.getElementById('introScreen');
+
+            // 멀티플레이 버튼 및 팝업 관련 변수
+            const multiButton = document.getElementById('multiButton');
+            const multiJoinPopup = document.getElementById('multiJoinPopup');
+            const multiJoinBtn = document.getElementById('multiJoinBtn');
+            const multiJoinCancel = document.getElementById('multiJoinCancel');
+            let myNick = "";
+            let roomId = "";
+            let myState = { x: 100, y: 100, health: 100 };
+            let otherPlayers = {};
+
+            // 멀티플레이 버튼 클릭 시 방 입장 팝업 표시
+            multiButton.onclick = function() {
+            introScreen.style.display = 'none';
+            multiJoinPopup.style.display = 'block';
+            };
+            multiJoinCancel.onclick = function() {
+            multiJoinPopup.style.display = 'none';
+            introScreen.style.display = 'flex';
+            };
+            multiJoinBtn.onclick = function() {
+            myNick = document.getElementById('multiNickname').value.trim();
+            roomId = document.getElementById('multiRoomId').value.trim();
+            if (!myNick || !roomId) return alert("닉네임과 방 코드를 입력하세요!");
+            multiJoinPopup.style.display = 'none';
+            // 내 상태 DB에 등록
+            db.ref(`rooms/${roomId}/players/${myNick}`).set(myState);
+            // 상대방 상태 실시간 감지
+            db.ref(`rooms/${roomId}/players`).on('value', (snap) => {
+                const players = snap.val() || {};
+                otherPlayers = {};
+                Object.keys(players).forEach(nick => {
+                if (nick !== myNick) {
+                    otherPlayers[nick] = players[nick];
+                }
+                });
+                // TODO: otherPlayers의 상태를 게임 화면에 반영 (캐릭터 위치/체력 등)
+            });
+            // 내 상태를 주기적으로 DB에 반영 (예: 0.1초마다)
+            setInterval(() => {
+                // TODO: myState를 내 캐릭터의 실제 위치/체력 등으로 갱신
+                // 예: myState.x = player.x; myState.y = player.y; myState.health = player.health;
+                db.ref(`rooms/${roomId}/players/${myNick}`).set(myState);
+            }, 100);
+            };
+            // 방 나가기(새로고침/닫기 시 내 데이터 삭제)
+            window.addEventListener('beforeunload', function() {
+            if (myNick && roomId) {
+                db.ref(`rooms/${roomId}/players/${myNick}`).remove();
+            }
+            });
 
             document.getElementById('soloButton').onclick = function() {
             introScreen.style.display = 'none';
