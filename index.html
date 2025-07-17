@@ -891,6 +891,25 @@
                 <h3 style="margin:0 0 8px 0;">하이브리드 시스템</h3>
                 <p style="margin:0; font-size:14px; opacity:0.9;">플레이어1은 마우스 조준, 플레이어2는 자동 조준으로 플레이합니다.</p>
             </button>
+            <button id="onlineMultiplayerButton" class="mode-button" style="background:rgba(14, 165, 233, 0.8); border:none; border-radius:8px; padding:15px; color:#fff; cursor:pointer; text-align:left;">
+                <h3 style="margin:0 0 8px 0;">온라인으로 플레이</h3>
+                <p style="margin:0; font-size:14px; opacity:0.9;">실시간 온라인 멀티플레이(베타)</p>
+            </button>
+            <div id="onlineMultiplayerPopup" class="glass-card" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:220; min-width:340px; min-height:180px; text-align:center;">
+                <h2 style="color:#0ea5e9; margin-bottom:12px;">온라인 멀티플레이</h2>
+                <div style="color:white; font-size:1.1em; margin-bottom:18px;">
+                    온라인 방을 만들거나, 아래 리스트에서 입장할 수 있습니다.
+                </div>
+                <div style="margin-bottom:12px;">
+                    <input id="roomNameInput" type="text" placeholder="방 이름 입력" style="padding:7px; border-radius:5px; border:none; width:140px;">
+                    <button id="createRoomButton" style="padding:7px 16px; border-radius:5px; border:none; background:#22c55e; color:white; margin-left:6px; cursor:pointer;">방 만들기</button>
+                </div>
+                <div id="roomListContainer" style="margin-bottom:18px; text-align:left; max-height:180px; overflow-y:auto; background:rgba(0,0,0,0.08); border-radius:8px; padding:10px 8px; color:#fff; font-size:1em; min-width:220px;">
+                    <b>방 리스트</b>
+                    <div id="roomList"></div>
+                </div>
+                <button id="closeOnlineMultiplayerPopup" style="margin-top:8px;">닫기</button>
+            </div>
             <button id="backToIntro" class="back-button" style="background:rgba(255,255,255,0.2); border:none; border-radius:6px; padding:10px; color:#fff; cursor:pointer;">← 뒤로가기</button>
         </div>
     </div>
@@ -7761,6 +7780,19 @@
             let myState = { x: 100, y: 100, health: 100 };
             let otherPlayers = {};
 
+            var onlineBtn = document.getElementById('onlineMultiplayerButton');
+                if (onlineBtn) {
+                    onlineBtn.onclick = function() {
+                        document.getElementById('onlineMultiplayerPopup').style.display = 'block';
+                    };
+                }
+                var closeOnlineBtn = document.getElementById('closeOnlineMultiplayerPopup');
+                if (closeOnlineBtn) {
+                    closeOnlineBtn.onclick = function() {
+                        document.getElementById('onlineMultiplayerPopup').style.display = 'none';
+                    };
+                }
+
             multiButton.onclick = function() {
                 introScreen.style.display = 'none';
                 multiJoinPopup.style.display = 'block';
@@ -7986,7 +8018,49 @@
                 }
             });
         }
+        (function() {
+        const db = firebase.database();
+        const createRoomButton = document.getElementById('createRoomButton');
+        const roomNameInput = document.getElementById('roomNameInput');
+        const roomListDiv = document.getElementById('roomList');
+        let myRoomKey = null;
 
+        // 방 만들기
+        if (createRoomButton) {
+            createRoomButton.onclick = function() {
+                const name = roomNameInput.value.trim();
+                if (!name) return alert('방 이름을 입력하세요!');
+                const newRoom = {
+                    name: name,
+                    createdAt: Date.now(),
+                    status: 'waiting',
+                    players: {}
+                };
+                const ref = db.ref('rooms').push(newRoom);
+                myRoomKey = ref.key;
+                roomNameInput.value = '';
+            };
+        }
+        // 방 리스트 실시간 표시
+        db.ref('rooms').on('value', snap => {
+            const rooms = snap.val() || {};
+            let html = '';
+            Object.entries(rooms).forEach(([key, room]) => {
+                html += `<div class="room-item" data-key="${key}" style="padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.08); cursor:pointer;">`;
+                html += `<b>${room.name}</b> <span style='font-size:0.9em; opacity:0.7;'>(${room.status === 'waiting' ? '대기중' : '진행중'})</span>`;
+                html += `</div>`;
+            });
+            roomListDiv.innerHTML = html || '<div style="opacity:0.7;">생성된 방이 없습니다.</div>';
+        });
+        // 방 클릭 시(입장) - 다음 단계에서 구현
+        roomListDiv.onclick = function(e) {
+            const item = e.target.closest('.room-item');
+            if (!item) return;
+            const key = item.getAttribute('data-key');
+            // TODO: 이름 입력 및 입장 로직 구현(다음 단계)
+            alert('방 입장: ' + key + '\\n(다음 단계에서 구현)');
+        };
+    })();
     </script>
 </body>
 </html>
