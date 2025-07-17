@@ -8144,9 +8144,8 @@
                             roomLobbyPopup.style.display = 'none';
                             if (window.game && typeof window.game.startGame === 'function') {
                                 window.game.startGame();
-                                // 아래 두 변수는 실제 입장 시 할당된 값 사용
                                 startMultiplayerSync(myRoomKey, myPlayerName);
-                            }
+                                }
                         }, 1200);
                     } else {
                         lobbyStatusMsg.textContent = '';
@@ -8183,28 +8182,33 @@
             });
         })();
         function startMultiplayerSync(roomId, myName) {
-            // 내 상태를 주기적으로 업로드
             if (window._syncInterval) clearInterval(window._syncInterval);
             window._syncInterval = setInterval(() => {
                 if (!window.game || !window.game.gameState || !window.game.gameState.player) return;
-                const player = window.game.gameState.player;
-                // 최소한의 정보만 업로드
+                const p = window.game.gameState.player;
                 firebase.database().ref(`rooms/${roomId}/players/${myName}`).update({
-                    x: player.x,
-                    y: player.y,
-                    health: player.health,
-                    color: player.color || '#6366f1'
+                    x: p.x, y: p.y,
+                    width: p.width, height: p.height,
+                    color: p.color,
+                    expression: p.expression,
+                    health: p.health,
+                    ammo: p.ammo,
+                    maxHealth: p.maxHealth,
+                    maxAmmo: p.maxAmmo
+                    // 필요한 필드 더 추가 가능
                 });
             }, 100);
 
             // 다른 플레이어 상태 실시간 반영
             firebase.database().ref(`rooms/${roomId}/players`).on('value', snap => {
                 const players = snap.val() || {};
-                // 내 정보 제외, 나머지 플레이어를 otherPlayers에 저장
                 window.game.gameState.otherPlayers = {};
                 Object.entries(players).forEach(([name, info]) => {
                     if (name !== myName) {
-                        window.game.gameState.otherPlayers[name] = info;
+                        // 필수값 보정
+                        window.game.gameState.otherPlayers[name] = Object.assign({
+                            x: 0, y: 0, width: 40, height: 40, color: '#ef4444', expression: ':D', health: 100, ammo: 30, maxHealth: 100, maxAmmo: 30
+                        }, info);
                     }
                 });
                 // 상단에 이름 표시
@@ -8215,37 +8219,34 @@
 
         // === 게임 루프에서 otherPlayers도 그리기 ===
         const _origDrawCharacter = window.game.drawCharacter;
-        window.game.drawCharacter = function(character, name) {
-            _origDrawCharacter.call(this, character);
-            // 이름 표시
-            if (name) {
-                this.ctx.save();
-                this.ctx.font = 'bold 16px Poppins';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillStyle = character.color || '#fff';
-                this.ctx.strokeStyle = '#222';
-                this.ctx.lineWidth = 3;
-                this.ctx.strokeText(name, character.x + character.width/2, character.y - 18);
-                this.ctx.fillText(name, character.x + character.width/2, character.y - 18);
-                this.ctx.restore();
-            }
-        };
+            window.game.drawCharacter = function(character, name) {
+                // 필수값 보정
+                const c = Object.assign({
+                    x: 0, y: 0, width: 40, height: 40, color: '#ef4444', expression: ':D', health: 100
+                }, character);
+                _origDrawCharacter.call(this, c);
+                if (name) {
+                    this.ctx.save();
+                    this.ctx.font = 'bold 16px Poppins';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillStyle = c.color || '#fff';
+                    this.ctx.strokeStyle = '#222';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.strokeText(name, c.x + c.width/2, c.y - 18);
+                    this.ctx.fillText(name, c.x + c.width/2, c.y - 18);
+                    this.ctx.restore();
+                }
+            };
 
-        // === 게임 루프에서 otherPlayers도 그림 ===
-        const _origRender = window.game.render;
-        window.game.render = function() {
-            _origRender.call(this);
-            // otherPlayers 그리기
-            if (this.gameState.otherPlayers) {
-                Object.entries(this.gameState.otherPlayers).forEach(([name, info]) => {
-                    // 기본값 보정
-                    const ch = Object.assign({
-                        width: 40, height: 40, color: '#ef4444', health: 100
-                    }, info);
-                    this.drawCharacter(ch, name);
-                });
-            }
-        };
+            const _origRender = window.game.render;
+            window.game.render = function() {
+                _origRender.call(this);
+                if (this.gameState.otherPlayers) {
+                    Object.entries(this.gameState.otherPlayers).forEach(([name, info]) => {
+                        this.drawCharacter(info, name);
+                    });
+                }
+            };
     </script>
 </body>
 </html>
