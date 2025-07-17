@@ -895,23 +895,25 @@
                 <h3 style="margin:0 0 8px 0;">온라인으로 플레이</h3>
                 <p style="margin:0; font-size:14px; opacity:0.9;">실시간 온라인 멀티플레이(베타)</p>
             </button>
-            <div id="onlineMultiplayerPopup" class="glass-card" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:220; min-width:340px; min-height:180px; text-align:center;">
-                <h2 style="color:#0ea5e9; margin-bottom:12px;">온라인 멀티플레이</h2>
-                <div style="color:white; font-size:1.1em; margin-bottom:18px;">
-                    온라인 방을 만들거나, 아래 리스트에서 입장할 수 있습니다.
-                </div>
-                <div style="margin-bottom:12px;">
-                    <input id="roomNameInput" type="text" placeholder="방 이름 입력" style="padding:7px; border-radius:5px; border:none; width:140px;">
-                    <button id="createRoomButton" style="padding:7px 16px; border-radius:5px; border:none; background:#22c55e; color:white; margin-left:6px; cursor:pointer;">방 만들기</button>
-                </div>
-                <div id="roomListContainer" style="margin-bottom:18px; text-align:left; max-height:180px; overflow-y:auto; background:rgba(0,0,0,0.08); border-radius:8px; padding:10px 8px; color:#fff; font-size:1em; min-width:220px;">
-                    <b>방 리스트</b>
-                    <div id="roomList"></div>
-                </div>
-                <button id="closeOnlineMultiplayerPopup" style="margin-top:8px;">닫기</button>
-            </div>
             <button id="backToIntro" class="back-button" style="background:rgba(255,255,255,0.2); border:none; border-radius:6px; padding:10px; color:#fff; cursor:pointer;">← 뒤로가기</button>
         </div>
+    </div>
+
+    <!-- 반드시 바깥에 위치! -->
+    <div id="onlineMultiplayerPopup" class="glass-card" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:220; min-width:340px; min-height:180px; text-align:center;">
+        <h2 style="color:#0ea5e9; margin-bottom:12px;">온라인 멀티플레이</h2>
+        <div style="color:white; font-size:1.1em; margin-bottom:18px;">
+            온라인 방을 만들거나, 아래 리스트에서 입장할 수 있습니다.
+        </div>
+        <div style="margin-bottom:12px;">
+            <input id="roomNameInput" type="text" placeholder="방 이름 입력" style="padding:7px; border-radius:5px; border:none; width:140px;">
+            <button id="createRoomButton" style="padding:7px 16px; border-radius:5px; border:none; background:#22c55e; color:white; margin-left:6px; cursor:pointer;">방 만들기</button>
+        </div>
+        <div id="roomListContainer" style="margin-bottom:18px; text-align:left; max-height:180px; overflow-y:auto; background:rgba(0,0,0,0.08); border-radius:8px; padding:10px 8px; color:#fff; font-size:1em; min-width:220px;">
+            <b>방 리스트</b>
+            <div id="roomList"></div>
+        </div>
+        <button id="closeOnlineMultiplayerPopup" style="margin-top:8px;">닫기</button>
     </div>
 
     <!-- 리더 시스템 설정 -->
@@ -8035,88 +8037,148 @@
             });
         }
         (function() {
-        const db = firebase.database();
-        const createRoomButton = document.getElementById('createRoomButton');
-        const roomNameInput = document.getElementById('roomNameInput');
-        const roomListDiv = document.getElementById('roomList');
-        let myPlayerName = null;
-        let myRoomKey = null;
-        let lobbyUnsub = null;
+            const db = firebase.database();
+            const createRoomButton = document.getElementById('createRoomButton');
+            const roomNameInput = document.getElementById('roomNameInput');
+            const roomListDiv = document.getElementById('roomList');
+            const enterRoomPopup = document.getElementById('enterRoomPopup');
+            const playerNameInput = document.getElementById('playerNameInput');
+            const enterRoomButton = document.getElementById('enterRoomButton');
+            const cancelEnterRoomButton = document.getElementById('cancelEnterRoomButton');
+            const roomLobbyPopup = document.getElementById('roomLobbyPopup');
+            const lobbyRoomName = document.getElementById('lobbyRoomName');
+            const lobbyPlayerList = document.getElementById('lobbyPlayerList');
+            const readyButton = document.getElementById('readyButton');
+            const leaveLobbyButton = document.getElementById('leaveLobbyButton');
+            const lobbyStatusMsg = document.getElementById('lobbyStatusMsg');
 
-        // 입장 버튼(이름 입력 후)
-        document.getElementById('enterRoomButton').onclick = function() {
-            const playerName = document.getElementById('playerNameInput').value.trim();
-            if (!playerName) return alert('이름을 입력하세요!');
-            if (!selectedRoomKey) return alert('방이 선택되지 않았습니다.');
-            myPlayerName = playerName;
-            myRoomKey = selectedRoomKey;
-            // Firebase에 플레이어 등록
-            db.ref(`rooms/${myRoomKey}/players/${myPlayerName}`).set({
-                ready: false,
-                joinedAt: Date.now()
-            });
-            document.getElementById('enterRoomPopup').style.display = 'none';
-            openLobby();
-        };
+            let myRoomKey = null;
+            let myPlayerName = null;
+            let selectedRoomKey = null;
+            let lobbyUnsub = null;
 
-        // 로비 열기 함수
-        function openLobby() {
-            document.getElementById('roomLobbyPopup').style.display = 'block';
-            document.getElementById('lobbyRoomName').textContent = '방 이름: ' + (roomListDiv.querySelector(`[data-key='${myRoomKey}'] b`)?.textContent || '');
-            // 실시간 플레이어 목록/준비 상태 표시
-            if (lobbyUnsub) lobbyUnsub.off();
-            lobbyUnsub = db.ref(`rooms/${myRoomKey}/players`);
-            lobbyUnsub.on('value', snap => {
-                const players = snap.val() || {};
-                let html = '';
-                let allReady = true;
-                Object.entries(players).forEach(([name, info]) => {
-                    html += `<div>${name} ${info.ready ? '✅' : '❌'}</div>`;
-                    if (!info.ready) allReady = false;
-                });
-                document.getElementById('lobbyPlayerList').innerHTML = html || '<div style="opacity:0.7;">플레이어 없음</div>';
-                // 모두 준비 완료 시
-                if (Object.keys(players).length > 0 && allReady) {
-                    document.getElementById('lobbyStatusMsg').textContent = '모두 준비 완료! 게임이 곧 시작됩니다...';
-                    setTimeout(() => {
-                        document.getElementById('roomLobbyPopup').style.display = 'none';
-                        // === 여기서 게임 시작 함수 호출 ===
-                        if (window.game && typeof window.game.startGame === 'function') {
-                            window.game.startGame();
+            // --- 방 만들기 ---
+            if (createRoomButton) {
+                createRoomButton.onclick = function() {
+                    const name = roomNameInput.value.trim();
+                    if (!name) return alert('방 이름을 입력하세요!');
+                    // 중복 방 이름 방지(옵션)
+                    db.ref('rooms').orderByChild('name').equalTo(name).once('value', snap => {
+                        if (snap.exists()) {
+                            alert('이미 존재하는 방 이름입니다. 다른 이름을 입력하세요!');
+                            return;
                         }
-                    }, 1200);
-                } else {
-                    document.getElementById('lobbyStatusMsg').textContent = '';
+                        const newRoom = {
+                            name: name,
+                            createdAt: Date.now(),
+                            status: 'waiting',
+                            players: {}
+                        };
+                        const ref = db.ref('rooms').push(newRoom);
+                        myRoomKey = ref.key;
+                        roomNameInput.value = '';
+                    });
+                };
+            }
+
+            // --- 방 리스트 실시간 표시 ---
+            db.ref('rooms').on('value', snap => {
+                const rooms = snap.val() || {};
+                let html = '';
+                Object.entries(rooms).forEach(([key, room]) => {
+                    html += `<div class="room-item" data-key="${key}" style="padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.08); cursor:pointer;">`;
+                    html += `<b>${room.name}</b> <span style='font-size:0.9em; opacity:0.7;'>(${room.status === 'waiting' ? '대기중' : '진행중'})</span>`;
+                    html += `</div>`;
+                });
+                roomListDiv.innerHTML = html || '<div style="opacity:0.7;">생성된 방이 없습니다.</div>';
+            });
+
+            // --- 방 클릭 시 이름 입력 팝업 ---
+            roomListDiv.onclick = function(e) {
+                const item = e.target.closest('.room-item');
+                if (!item) return;
+                selectedRoomKey = item.getAttribute('data-key');
+                enterRoomPopup.style.display = 'block';
+                playerNameInput.value = '';
+            };
+
+            // --- 입장 버튼 ---
+            enterRoomButton.onclick = function() {
+                const playerName = playerNameInput.value.trim();
+                if (!playerName) return alert('이름을 입력하세요!');
+                if (!selectedRoomKey) return alert('방이 선택되지 않았습니다.');
+                myPlayerName = playerName;
+                myRoomKey = selectedRoomKey;
+                db.ref(`rooms/${myRoomKey}/players/${myPlayerName}`).set({
+                    ready: false,
+                    joinedAt: Date.now()
+                });
+                enterRoomPopup.style.display = 'none';
+                openLobby();
+            };
+
+            // --- 취소 버튼 ---
+            cancelEnterRoomButton.onclick = function() {
+                enterRoomPopup.style.display = 'none';
+            };
+
+            // --- 로비 열기 함수 ---
+            function openLobby() {
+                roomLobbyPopup.style.display = 'block';
+                lobbyRoomName.textContent = '방 이름: ' + (roomListDiv.querySelector(`[data-key='${myRoomKey}'] b`)?.textContent || '');
+                if (lobbyUnsub) lobbyUnsub.off();
+                lobbyUnsub = db.ref(`rooms/${myRoomKey}/players`);
+                lobbyUnsub.on('value', snap => {
+                    const players = snap.val() || {};
+                    let html = '';
+                    let allReady = true;
+                    Object.entries(players).forEach(([name, info]) => {
+                        html += `<div>${name} ${info.ready ? '✅' : '❌'}</div>`;
+                        if (!info.ready) allReady = false;
+                    });
+                    lobbyPlayerList.innerHTML = html || '<div style="opacity:0.7;">플레이어 없음</div>';
+                    if (Object.keys(players).length > 0 && allReady) {
+                        lobbyStatusMsg.textContent = '모두 준비 완료! 게임이 곧 시작됩니다...';
+                        setTimeout(() => {
+                            roomLobbyPopup.style.display = 'none';
+                            if (window.game && typeof window.game.startGame === 'function') {
+                                window.game.startGame();
+                            }
+                        }, 1200);
+                    } else {
+                        lobbyStatusMsg.textContent = '';
+                    }
+                });
+                readyButton.disabled = false;
+                readyButton.textContent = '준비';
+            }
+
+            // --- 준비 버튼 ---
+            readyButton.onclick = function() {
+                if (!myRoomKey || !myPlayerName) return;
+                db.ref(`rooms/${myRoomKey}/players/${myPlayerName}/ready`).set(true);
+                this.disabled = true;
+                this.textContent = '준비 완료';
+            };
+
+            // --- 나가기 버튼 ---
+            leaveLobbyButton.onclick = function() {
+                if (myRoomKey && myPlayerName) {
+                    db.ref(`rooms/${myRoomKey}/players/${myPlayerName}`).remove();
+                }
+                roomLobbyPopup.style.display = 'none';
+                myRoomKey = null;
+                myPlayerName = null;
+                if (lobbyUnsub) lobbyUnsub.off();
+            };
+
+            // --- 새로고침/닫기 시 방에서 나가기 ---
+            window.addEventListener('beforeunload', function() {
+                if (myRoomKey && myPlayerName) {
+                    db.ref(`rooms/${myRoomKey}/players/${myPlayerName}`).remove();
                 }
             });
-        }
-
-        // 준비 버튼
-        document.getElementById('readyButton').onclick = function() {
-            if (!myRoomKey || !myPlayerName) return;
-            db.ref(`rooms/${myRoomKey}/players/${myPlayerName}/ready`).set(true);
-            this.disabled = true;
-            this.textContent = '준비 완료';
-        };
-
-        // 나가기 버튼
-        document.getElementById('leaveLobbyButton').onclick = function() {
-            if (myRoomKey && myPlayerName) {
-                db.ref(`rooms/${myRoomKey}/players/${myPlayerName}`).remove();
-            }
-            document.getElementById('roomLobbyPopup').style.display = 'none';
-            myRoomKey = null;
-            myPlayerName = null;
-            if (lobbyUnsub) lobbyUnsub.off();
-        };
-
-        // 새로고침/닫기 시 방에서 나가기
-        window.addEventListener('beforeunload', function() {
-            if (myRoomKey && myPlayerName) {
-                db.ref(`rooms/${myRoomKey}/players/${myPlayerName}`).remove();
-            }
-        });
-    })();
+        })();
     </script>
 </body>
 </html>
