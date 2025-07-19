@@ -2780,7 +2780,7 @@
                         speed: 5, jumpPower: 15,
                         onGround: false, facing: 0,
                         expression: this.getRandomExpression(),
-                        color: '#6366f1',
+                        color: this.getRandomPlayerColor(),
                         baseDamage: 10, // 기본값 10으로 변경
                         multishot: 1,
                         rapidFireTime: 0,
@@ -2852,6 +2852,17 @@
                 
                 // 게임 모드 설정 (솔로 플레이)
                 this.gameMode = 'solo';
+                
+                // 멀티플레이어 UI 숨기기 (게임 시작 시)
+                const roomListPopup = document.getElementById('roomListPopup');
+                const roomLobbyPopup = document.getElementById('roomLobbyPopup');
+                const enterRoomPopup = document.getElementById('enterRoomPopup');
+                const createRoomPopup = document.getElementById('createRoomPopup');
+                
+                if (roomListPopup) roomListPopup.style.display = 'none';
+                if (roomLobbyPopup) roomLobbyPopup.style.display = 'none';
+                if (enterRoomPopup) enterRoomPopup.style.display = 'none';
+                if (createRoomPopup) createRoomPopup.style.display = 'none';
             }
             
             // 무작위 표정 반환
@@ -2860,6 +2871,25 @@
                     return this.EXPRESSIONS[Math.floor(Math.random() * this.EXPRESSIONS.length)];
                 }
                 return ':)'; // 표정 배열이 비어있는 경우를 위한 기본 표정
+            }
+            
+            // 무작위 플레이어 색상 반환
+            getRandomPlayerColor = () => {
+                const colors = [
+                    '#ef4444', // 빨강
+                    '#3b82f6', // 파랑
+                    '#10b981', // 초록
+                    '#f59e0b', // 주황
+                    '#8b5cf6', // 보라
+                    '#ec4899', // 분홍
+                    '#06b6d4', // 청록
+                    '#84cc16', // 연두
+                    '#f97316', // 주황
+                    '#6366f1', // 인디고
+                    '#14b8a6', // 청록
+                    '#f43f5e'  // 로즈
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
             }
             
             // 현재 웨이브에 따라 적 타입 결정 (보스 제거)
@@ -3488,7 +3518,8 @@
             
             // 웨이브 생성 (새로운 보스 시스템)
             spawnInitialWave = () => {
-                if (typeof bossRushMode !== 'undefined' && bossRushMode) {
+                // 보스 러시 모드 체크 (정의되지 않은 변수 참조 제거)
+                if (this.gameState.bossRushMode && this.gameState.bossRushMode === true) {
                     const bossTypes = [
                         'boss_alpha','boss_beta','boss_gamma','boss_delta','boss_epsilon','boss_zeta','boss_eta','boss_theta'
                     ];
@@ -3498,19 +3529,8 @@
                     this.gameState.enemies.push(this.createEnemy(bossType));
                     return;
                 }
-
-                if (typeof bossRushMode !== 'undefined' && bossRushMode) {
-                    // 보스 러시 모드: 매 웨이브마다 보스만 등장
-                    const bossTypes = [
-                        'boss_alpha','boss_beta','boss_gamma','boss_delta','boss_epsilon','boss_zeta','boss_eta','boss_theta'
-                    ];
-                    const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
-                    const bossData = this.ENEMY_TYPES[bossType];
-                    this.showMessage(`${bossData.name} 등장!`, '보스 러시!', 2000);
-                    this.gameState.enemies.push(this.createEnemy(bossType));
-                    return;
-                }
-                if (this.gameState.gameStatus !== 'spawning') return;
+                // 게임 상태가 spawning이 아니면 웨이브 생성 안함
+                if (this.gameState.gameStatus !== 'spawning' && this.gameState.gameStatus !== 'playing') return;
                 
                 // 테스팅 존에서는 자동 소환 안함
                 if (this.gameMode === 'testzone') return;
@@ -3705,6 +3725,9 @@
                 if (character === player) { // character === this.gameState.player 대신 player 사용
                     if (now > this.gameState.playerSlowedEndTime) {
                         character.speed = 5; // 기본 속도로 복귀
+                        // 속도 버그 방지: 추가 검증
+                        if (character.speed > 10) character.speed = 5;
+                        if (character.speed < 1) character.speed = 5;
                     }
                     // 체력 재생 효과
                     if (now < character.healthRegenEndTime && now - character.lastRegenTick > character.tickInterval) {
@@ -8325,6 +8348,7 @@
             enterRoomButton.onclick = function() {
                 const playerName = playerNameInput.value.trim();
                 if (!playerName) return alert('이름을 입력하세요!');
+                if (/[^a-zA-Z0-9가-힣_]/.test(playerName)) return alert('이름에 특수문자를 사용할 수 없습니다!');
                 if (!selectedRoomKey) return alert('방이 선택되지 않았습니다.');
                 myPlayerName = playerName;
                 myRoomKey = selectedRoomKey;
@@ -8473,6 +8497,8 @@
                     velocityY: p.velocityY || 0,
                     isAlive: p.health > 0,
                     facing: p.facing || 0,
+                    mouseX: this.mouse.x,
+                    mouseY: this.mouse.y,
                     lastUpdate: Date.now()
                 };
                 
@@ -8501,6 +8527,8 @@
                             velocityX: info.velocityX || 0,
                             velocityY: info.velocityY || 0,
                             facing: info.facing || 0,
+                            mouseX: info.mouseX || 0,
+                            mouseY: info.mouseY || 0,
                             isAlive: info.isAlive !== false,
                             type: 'otherPlayer'
                         };
@@ -8678,6 +8706,30 @@
                     // 유효한 데이터인지 확인
                     if (info && typeof info.x === 'number' && typeof info.y === 'number' && info.isAlive !== false) {
                         this.drawCharacter(info, name);
+                        
+                        // 다른 플레이어의 커서 그리기
+                        if (info.mouseX !== undefined && info.mouseY !== undefined) {
+                            this.ctx.save();
+                            this.ctx.strokeStyle = info.color || '#ef4444';
+                            this.ctx.lineWidth = 2;
+                            this.ctx.globalAlpha = 0.7;
+                            
+                            // 십자 모양 커서
+                            const size = 8;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(info.mouseX - size, info.mouseY);
+                            this.ctx.lineTo(info.mouseX + size, info.mouseY);
+                            this.ctx.moveTo(info.mouseX, info.mouseY - size);
+                            this.ctx.lineTo(info.mouseX, info.mouseY + size);
+                            this.ctx.stroke();
+                            
+                            // 원형 테두리
+                            this.ctx.beginPath();
+                            this.ctx.arc(info.mouseX, info.mouseY, size + 2, 0, Math.PI * 2);
+                            this.ctx.stroke();
+                            
+                            this.ctx.restore();
+                        }
                     }
                 });
             }
