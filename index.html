@@ -352,10 +352,7 @@
         /* 2) 상점 UI에 아이템 표시 및 구매 로직 구현 */
 
         /* 3) 상점 버튼 클릭 시 updateShopList 호출 */
-        document.getElementById('shopButton').onclick = () => {
-            document.getElementById('shopPopup').style.display = 'block';
-            this.updateShopList();
-        };
+        /* 이 부분은 JavaScript에서 처리됩니다 */
     </style>
 </head>
 <!DOCTYPE html>
@@ -694,14 +691,46 @@
         /* 2) 상점 UI에 아이템 표시 및 구매 로직 구현 */
 
         /* 3) 상점 버튼 클릭 시 updateShopList 호출 */
-        document.getElementById('shopButton').onclick = () => {
-            document.getElementById('shopPopup').style.display = 'block';
-            this.updateShopList();
-        };
+        /* 이 부분은 JavaScript에서 처리됩니다 */
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
+
+    <div id="chatBox" style="
+        position:fixed; left:20px; bottom:20px; width:320px; z-index:20;
+        background:rgba(255,255,255,0.13);
+        border-radius:18px;
+        padding:14px 14px 10px 14px;
+        color:#222;
+        font-size:15px;
+        display:flex; flex-direction:column; gap:8px;
+        box-shadow:0 8px 32px rgba(0,0,0,0.25);
+        border:1.5px solid rgba(255,255,255,0.25);
+        backdrop-filter:blur(18px) saturate(1.5);
+        -webkit-backdrop-filter:blur(18px) saturate(1.5);
+    ">
+    <div id="chatMessages" style="
+        height:120px; overflow-y:auto; margin-bottom:8px;
+        background:rgba(255,255,255,0.18);
+        border-radius:10px; padding:8px 6px;
+        color:#222; font-size:15px;
+        box-shadow:0 2px 8px rgba(0,0,0,0.07);
+    "></div>
+    <div style="display:flex; gap:6px;">
+        <input id="chatInput" type="text" maxlength="100" placeholder="채팅 입력..." style="
+            flex:1; border-radius:8px; border:none; padding:7px 10px; font-size:15px;
+            background:rgba(255,255,255,0.5); color:#222; outline:none;
+            box-shadow:0 1px 4px rgba(0,0,0,0.07);
+        ">
+        <button id="chatSendBtn" style="
+            background:linear-gradient(90deg,#60a5fa,#818cf8);
+            color:#fff; border:none; border-radius:8px; padding:7px 18px;
+            font-weight:bold; cursor:pointer; font-size:15px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.10);
+            transition:background 0.2s;
+        ">전송</button>
+    </div>
     
     <!-- HUD 요소들 -->
     <div class="hud">
@@ -2514,6 +2543,11 @@
                 this.updateHUD();
                 this.hideMessage();
                 
+                // 플레이어2 HUD 표시 (멀티플레이어 모드에서만)
+                if (this.gameState.player2 && this.gameState.multiplayerMode) {
+                    document.getElementById('player2HUD').style.display = 'flex';
+                }
+                
                 // 퀘스트 초기화
                 this.questSystem.activeQuests = [];
                 for (let i = 0; i < 3; i++) {
@@ -2779,7 +2813,7 @@
                         ammo: 30, maxAmmo: 30, // 기본값 100으로 변경
                         speed: 5, jumpPower: 15,
                         onGround: false, facing: 0,
-                        expression: this.getRandomExpression(),
+                        expression: ':D',
                         color: this.getRandomPlayerColor(),
                         baseDamage: 10, // 기본값 10으로 변경
                         multishot: 1,
@@ -2853,16 +2887,23 @@
                 // 게임 모드 설정 (솔로 플레이)
                 this.gameMode = 'solo';
                 
+                // 게임 속도 정상화
+                this.gameState.timeSlowEffect = 1;
+                
                 // 멀티플레이어 UI 숨기기 (게임 시작 시)
                 const roomListPopup = document.getElementById('roomListPopup');
                 const roomLobbyPopup = document.getElementById('roomLobbyPopup');
                 const enterRoomPopup = document.getElementById('enterRoomPopup');
                 const createRoomPopup = document.getElementById('createRoomPopup');
+                const multiplayerModeSelect = document.getElementById('multiplayerModeSelect');
+                const onlineMultiplayerPopup = document.getElementById('onlineMultiplayerPopup');
                 
                 if (roomListPopup) roomListPopup.style.display = 'none';
                 if (roomLobbyPopup) roomLobbyPopup.style.display = 'none';
                 if (enterRoomPopup) enterRoomPopup.style.display = 'none';
                 if (createRoomPopup) createRoomPopup.style.display = 'none';
+                if (multiplayerModeSelect) multiplayerModeSelect.style.display = 'none';
+                if (onlineMultiplayerPopup) onlineMultiplayerPopup.style.display = 'none';
             }
             
             // 무작위 표정 반환
@@ -3111,12 +3152,31 @@
                 let enemyData = { ...this.ENEMY_TYPES[type] };
                 
                 // 스케일링: 웨이브가 오를수록 체력/공격력/속도 증가
-                const scale = 1 + (this.gameState.wave - 1) * 0.12; // 20% 완화
-                enemyData.health = Math.floor(enemyData.health * scale * 0.8);
-                enemyData.maxHealth = enemyData.health;
-                enemyData.speed = enemyData.speed * (1 + (this.gameState.wave - 1) * 0.04); // 20% 완화
-                enemyData.damage = Math.floor(enemyData.damage * scale * 0.8);
-                enemyData.points = Math.floor(enemyData.points * scale);
+                if (this.bossRushMode && type.startsWith('boss')) {
+                    // 보스 러시 모드: 보스만 등장, 속도 증가 완화, 능력치 대폭 상향
+                    const scale = 2.5 * Math.pow(2.5, Math.floor(this.gameState.wave / 10));
+                    enemyData.health = Math.floor(enemyData.health * scale);
+                    enemyData.maxHealth = enemyData.health;
+                    enemyData.speed = enemyData.speed * (1 + (this.gameState.wave / 50)); // 속도 증가 완화
+                    enemyData.damage = Math.floor(enemyData.damage * scale);
+                    enemyData.points = Math.floor(enemyData.points * scale);
+                } else if (type.startsWith('boss')) {
+                    // 일반 보스 웨이브
+                    const scale = 2.5 * Math.pow(2.5, Math.floor(this.gameState.wave / 10));
+                    enemyData.health = Math.floor(enemyData.health * scale);
+                    enemyData.maxHealth = enemyData.health;
+                    enemyData.speed = enemyData.speed * (1 + (this.gameState.wave / 30));
+                    enemyData.damage = Math.floor(enemyData.damage * scale);
+                    enemyData.points = Math.floor(enemyData.points * scale);
+                } else {
+                    // 일반 적
+                    const scale = 1 + (this.gameState.wave - 1) * 0.12;
+                    enemyData.health = Math.floor(enemyData.health * scale * 0.8);
+                    enemyData.maxHealth = enemyData.health;
+                    enemyData.speed = enemyData.speed * (1 + (this.gameState.wave - 1) * 0.04);
+                    enemyData.damage = Math.floor(enemyData.damage * scale * 0.8);
+                    enemyData.points = Math.floor(enemyData.points * scale);
+                }
                 
                 // 신규 적 등장 메시지
                 const newTypes = [
@@ -3518,17 +3578,6 @@
             
             // 웨이브 생성 (새로운 보스 시스템)
             spawnInitialWave = () => {
-                // 보스 러시 모드 체크 (정의되지 않은 변수 참조 제거)
-                if (this.gameState.bossRushMode && this.gameState.bossRushMode === true) {
-                    const bossTypes = [
-                        'boss_alpha','boss_beta','boss_gamma','boss_delta','boss_epsilon','boss_zeta','boss_eta','boss_theta'
-                    ];
-                    const bossType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
-                    const bossData = this.ENEMY_TYPES[bossType];
-                    this.showMessage(`${bossData.name} 등장!`, '보스 러시!', 2000);
-                    this.gameState.enemies.push(this.createEnemy(bossType));
-                    return;
-                }
                 // 게임 상태가 spawning이 아니면 웨이브 생성 안함
                 if (this.gameState.gameStatus !== 'spawning' && this.gameState.gameStatus !== 'playing') return;
                 
@@ -4503,7 +4552,7 @@
                     }
                     // 스킬2: 시간 가속 (8초 쿨)
                     if (now - character.lastTimeAccel > (character.timeAccelCooldown || 8000)) {
-                        this.gameState.timeSlowEffect = 2.0; // 시간을 빠르게
+                        this.gameState.timeSlowEffect = 1.0; // 시간을 정상 속도로
                         this.createFloatingText(character.x + character.width/2, character.y-20, '시간 가속!', '#ff6b9d');
                         setTimeout(() => {
                             this.gameState.timeSlowEffect = 1;
@@ -5172,6 +5221,20 @@
             
             // 발사체 상태 업데이트 및 충돌 감지 (유령 무적 상태 처리 추가)
             updateProjectiles = () => {
+
+
+                if (p.bounceCount && p.bounceCount > 0) {
+                    if (p.x < 0 || p.x > this.canvas.width) {
+                        p.vx *= -1;
+                        p.bounceCount--;
+                        p.x = Math.max(0, Math.min(this.canvas.width, p.x));
+                    }
+                    if (p.y < 0 || p.y > this.canvas.height) {
+                        p.vy *= -1;
+                        p.bounceCount--;
+                        p.y = Math.max(0, Math.min(this.canvas.height, p.y));
+                    }
+                }
                 // Homing logic: adjust velocity of homing projectiles
                 for (let i = 0; i < this.gameState.projectiles.length; i++) {
                     const p = this.gameState.projectiles[i];
@@ -5184,7 +5247,7 @@
                             if (dist < minDist) { minDist = dist; nearest = enemy; }
                         }
                         // Homing parameters
-                        const maxTurn = (p.homingStrength || 0.08) * Math.PI; // 최대 회전 각도 (라디안)
+                        const maxTurn = (p.homingStrength || 0.03) * Math.PI; // 최대 회전 각도 (라디안)
                         const speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy) || 8;
                         if (nearest) {
                             const dx = nearest.x + nearest.width/2 - p.x;
@@ -7223,9 +7286,23 @@
                 // 플레이어2 업데이트 (멀티플레이 모드일 때만)
                 if (this.gameState.player2 && this.gameState.multiplayerMode) {
                     this.updateCharacter(this.gameState.player2);
+                    // 플레이어2 자동 발사 (하이브리드 모드에서만)
+                    if (this.gameState.multiplayerMode === 'hybrid' && !this.gameState.player2Dead) {
+                        const now = Date.now();
+                        if (now - this.gameState.player2.lastShot > 300) { // 300ms 간격으로 자동 발사
+                            this.shootPlayer2();
+                        }
+                    }
                 }
                 this.gameState.enemies.forEach(e => this.updateCharacter(e));
                 this.gameState.allies.forEach(a => this.updateCharacter(a));
+                
+                // 온라인 협동 동기화 처리 (방장만)
+                if (this.gameState.isHost) {
+                    if (this.checkCollisions) this.checkCollisions();
+                    if (this.processEffects) this.processEffects();
+                }
+                
                 // 2. 웨이브 완료 체크
                 this.checkWaveComplete();
                 // 3. 렌더링
@@ -7259,7 +7336,7 @@
                 shopList.innerHTML = '';
                 this.SHOP_ITEMS.forEach(item => {
                     // 가격 계산: 구매 횟수에 따라 가격 증가 (20%씩 증가)
-                    const currentPrice = Math.floor(item.basePrice * (1 + item.purchaseCount * 0.2));
+                    const currentPrice = Math.floor(item.basePrice * (1 + item.purchaseCount * 0.2) * 2);
                     const affordable = this.gameState.score >= currentPrice;
                     const itemDiv = document.createElement('div');
                     itemDiv.style.display = 'flex';
@@ -8459,281 +8536,576 @@
                     db.ref(`rooms/${myRoomKey}/players/${myPlayerName}`).remove();
                 }
             });
-        })();
-        function startMultiplayerSync(roomId, myName) {
-            // 기존 동기화 중지
-            if (window._syncInterval) clearInterval(window._syncInterval);
-            if (window._enemySyncInterval) clearInterval(window._enemySyncInterval);
-            if (window._gameStateSyncInterval) clearInterval(window._gameStateSyncInterval);
-            if (window._playerSyncRef) window._playerSyncRef.off();
-            if (window._enemySyncRef) window._enemySyncRef.off();
-            if (window._gameStateSyncRef) window._gameStateSyncRef.off();
-            
-            // 게임 상태 초기화
-            if (!window.game.gameState.otherPlayers) {
-                window.game.gameState.otherPlayers = {};
-            }
-            
-            // 멀티플레이어 모드 설정
-            window.game.gameState.multiplayerMode = true;
-            
-            // 내 플레이어 상태 동기화 (30fps로 업데이트 - 성능 개선)
-            window._syncInterval = setInterval(() => {
-                if (!window.game || !window.game.gameState || !window.game.gameState.player) return;
-                
-                const p = window.game.gameState.player;
-                const playerData = {
-                    x: Math.round(p.x * 100) / 100,
-                    y: Math.round(p.y * 100) / 100,
-                    width: p.width,
-                    height: p.height,
-                    color: p.color,
-                    expression: p.expression,
-                    health: p.health,
-                    ammo: p.ammo,
-                    maxHealth: p.maxHealth,
-                    maxAmmo: p.maxAmmo,
-                    velocityX: p.velocityX || 0,
-                    velocityY: p.velocityY || 0,
-                    isAlive: p.health > 0,
-                    facing: p.facing || 0,
-                    mouseX: this.mouse.x,
-                    mouseY: this.mouse.y,
-                    lastUpdate: Date.now()
-                };
-                
-                firebase.database().ref(`rooms/${roomId}/players/${myName}`).update(playerData);
-            }, 33); // 30fps
 
-            // 다른 플레이어 상태 실시간 반영
-            window._playerSyncRef = firebase.database().ref(`rooms/${roomId}/players`);
-            window._playerSyncRef.on('value', snap => {
-                const players = snap.val() || {};
-                window.game.gameState.otherPlayers = {};
+            // === 온라인 협동 동기화 함수 ===
+            function startMultiplayerSync(roomId, playerName) {
+                if (window._multiplayerSyncStarted) return;
+                window._multiplayerSyncStarted = true;
                 
-                Object.entries(players).forEach(([name, info]) => {
-                    if (name !== myName && info && info.x !== undefined && info.isAlive !== false) {
-                        const playerData = {
-                            x: info.x || 0,
-                            y: info.y || 0,
-                            width: info.width || 40,
-                            height: info.height || 40,
-                            color: info.color || '#ef4444',
-                            expression: info.expression || ':D',
-                            health: info.health || 100,
-                            ammo: info.ammo || 30,
-                            maxHealth: info.maxHealth || 100,
-                            maxAmmo: info.maxAmmo || 30,
-                            velocityX: info.velocityX || 0,
-                            velocityY: info.velocityY || 0,
-                            facing: info.facing || 0,
-                            mouseX: info.mouseX || 0,
-                            mouseY: info.mouseY || 0,
-                            isAlive: info.isAlive !== false,
-                            type: 'otherPlayer'
-                        };
-                        
-                        window.game.gameState.otherPlayers[name] = playerData;
-                    }
-                });
+                console.log(`온라인 협동 동기화 시작: ${roomId}, ${playerName}`);
                 
-                // 상단에 이름 표시 업데이트
-                const playerNamesBar = document.getElementById('playerNamesBar');
-                if (playerNamesBar) {
-                    const playerNames = Object.keys(players).map(n => 
-                        n === myName ? `[나]${n}` : n
-                    );
-                    playerNamesBar.innerText = playerNames.join(' / ');
-                }
-                
-                // 호스트 결정 (한 번만)
-                if (!window.game.gameState.isHostSet) {
-                    const playerNames = Object.keys(players);
-                    const isHost = playerNames.indexOf(myName) === 0;
-                    window.game.gameState.isHost = isHost;
-                    window.game.gameState.isHostSet = true;
+                // 방장 결정 (첫 번째 플레이어가 방장)
+                let isHost = false;
+                db.ref(`rooms/${roomId}/players`).once('value', snap => {
+                    const players = snap.val() || {};
+                    const playerNames = Object.keys(players).sort();
+                    isHost = playerNames[0] === playerName;
+                    console.log(`방장 여부: ${isHost}`);
                     
+                    // 게임 상태에 방장 정보 저장
+                    if (window.game) {
+                        window.game.gameState.isHost = isHost;
+                        window.game.gameState.roomId = roomId;
+                        window.game.gameState.myName = playerName;
+                    }
+                    
+                    // 1. 게스트 입력 전송 (게스트만)
+                    if (!isHost) {
+                        setInterval(() => {
+                            if (window.game && window.game.keys) {
+                                const input = {
+                                    keys: { ...window.game.keys },
+                                    mouse: { ...window.game.mouse },
+                                    shoot: window.game._shootPressed || false,
+                                    timestamp: Date.now()
+                                };
+                                db.ref(`rooms/${roomId}/inputs/${playerName}`).set(input);
+                            }
+                        }, 33); // 30fps
+                    }
+                    
+                    // 2. 방장 입력 수신 및 처리 (방장만)
                     if (isHost) {
-                        // 방장은 적 상태를 Firebase에 동기화
-                        window._enemySyncInterval = setInterval(() => {
-                            if (!window.game || !window.game.gameState) return;
-                            
-                            const enemies = window.game.gameState.enemies.map(enemy => ({
-                                id: enemy.id,
-                                x: Math.round(enemy.x * 100) / 100,
-                                y: Math.round(enemy.y * 100) / 100,
-                                width: enemy.width,
-                                height: enemy.height,
-                                color: enemy.color,
-                                expression: enemy.expression,
-                                health: enemy.health,
-                                maxHealth: enemy.maxHealth,
-                                type: enemy.type,
-                                velocityX: enemy.velocityX || 0,
-                                velocityY: enemy.velocityY || 0,
-                                isAlive: enemy.health > 0,
-                                lastShot: enemy.lastShot || 0,
-                                lastMove: enemy.lastMove || 0,
-                                lastSpecial: enemy.lastSpecial || 0,
-                                targetId: enemy.targetId || null,
-                                state: enemy.state || 'idle',
-                                lastUpdate: Date.now()
-                            }));
-                            
-                            firebase.database().ref(`rooms/${roomId}/enemies`).set(enemies);
-                        }, 100); // 10fps로 적 동기화 (성능 개선)
-                        
-                        // 방장은 게임 상태를 Firebase에 동기화
-                        window._gameStateSyncInterval = setInterval(() => {
-                            if (!window.game || !window.game.gameState) return;
-                            
-                            firebase.database().ref(`rooms/${roomId}/gameState`).update({
-                                score: window.game.gameState.score,
-                                wave: window.game.gameState.wave,
-                                gameStatus: window.game.gameState.gameStatus,
-                                lastUpdate: Date.now()
-                            });
-                        }, 2000); // 2초마다 게임 상태 동기화
-                    } else {
-                        // 일반 플레이어는 Firebase에서 적 상태 받아오기
-                        window._enemySyncRef = firebase.database().ref(`rooms/${roomId}/enemies`);
-                        window._enemySyncRef.on('value', snap => {
-                            const enemies = snap.val() || [];
-                            if (Array.isArray(enemies)) {
-                                // 기존 적 제거
-                                window.game.gameState.enemies = [];
-                                
-                                // 새로운 적 추가
-                                enemies.forEach(enemyData => {
-                                    if (enemyData && enemyData.isAlive !== false) {
-                                        const enemy = {
-                                            ...enemyData,
-                                            lastShot: enemyData.lastShot || 0,
-                                            lastMove: enemyData.lastMove || 0,
-                                            lastSpecial: enemyData.lastSpecial || 0,
-                                            targetId: enemyData.targetId || null,
-                                            state: enemyData.state || 'idle'
-                                        };
-                                        window.game.gameState.enemies.push(enemy);
+                        setInterval(() => {
+                            db.ref(`rooms/${roomId}/inputs`).once('value', snap => {
+                                const inputs = snap.val() || {};
+                                Object.entries(inputs).forEach(([name, input]) => {
+                                    if (window.game && input) {
+                                        applyInputToPlayer(name, input);
                                     }
                                 });
-                            }
-                        });
+                            });
+                        }, 16); // 60fps
                         
-                        // 게임 상태 동기화
-                        window._gameStateSyncRef = firebase.database().ref(`rooms/${roomId}/gameState`);
-                        window._gameStateSyncRef.on('value', snap => {
-                            const gameStateData = snap.val();
-                            if (gameStateData) {
-                                window.game.gameState.score = gameStateData.score || window.game.gameState.score;
-                                window.game.gameState.wave = gameStateData.wave || window.game.gameState.wave;
-                                window.game.gameState.gameStatus = gameStateData.gameStatus || window.game.gameState.gameStatus;
+                        // 3. 방장이 처리한 결과 동기화
+                        setInterval(() => {
+                            if (window.game) {
+                                // 플레이어 상태 동기화
+                                db.ref(`rooms/${roomId}/players`).set(window.game.gameState.players);
+                                // 적 상태 동기화
+                                db.ref(`rooms/${roomId}/enemies`).set(window.game.gameState.enemies);
+                                // 게임 상태 동기화
+                                db.ref(`rooms/${roomId}/gameState`).set({
+                                    score: window.game.gameState.score,
+                                    level: window.game.gameState.level,
+                                    gameTime: window.game.gameState.gameTime
+                                });
+                                // 아이템 상태 동기화
+                                if (window.game.gameState.items) {
+                                    db.ref(`rooms/${roomId}/items`).set(window.game.gameState.items);
+                                }
+                                // 특수효과 동기화
+                                if (window.game.gameState.effects) {
+                                    db.ref(`rooms/${roomId}/effects`).set(window.game.gameState.effects);
+                                }
                             }
-                        });
+                        }, 100);
                     }
-                }
-            });
-            
-            // 방 상태를 게임 진행중으로 변경
-            firebase.database().ref(`rooms/${roomId}/status`).set('playing');
-            
-            // 게임 종료 시 정리
-            window.addEventListener('beforeunload', function() {
-                if (window._syncInterval) clearInterval(window._syncInterval);
-                if (window._enemySyncInterval) clearInterval(window._enemySyncInterval);
-                if (window._gameStateSyncInterval) clearInterval(window._gameStateSyncInterval);
-                if (window._playerSyncRef) window._playerSyncRef.off();
-                if (window._enemySyncRef) window._enemySyncRef.off();
-                if (window._gameStateSyncRef) window._gameStateSyncRef.off();
-                firebase.database().ref(`rooms/${roomId}/players/${myName}`).remove();
-            });
-        }
-
-        // === 게임 루프에서 otherPlayers도 그리기 ===
-        const _origDrawCharacter = window.game.drawCharacter;
-        window.game.drawCharacter = function(character, name) {
-            // 필수값 보정
-            const c = Object.assign({
-                x: 0, y: 0, width: 40, height: 40, color: '#ef4444', expression: ':D', health: 100
-            }, character);
-            
-            // 플레이어가 살아있는지 확인
-            if (c.isAlive === false) return;
-            
-            _origDrawCharacter.call(this, c);
-            
-            if (name) {
-                this.ctx.save();
-                this.ctx.font = 'bold 14px Poppins';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillStyle = c.color || '#fff';
-                this.ctx.strokeStyle = '#000';
-                this.ctx.lineWidth = 2;
-                
-                // 이름 그리기
-                const nameY = c.y - 25;
-                this.ctx.strokeText(name, c.x + c.width/2, nameY);
-                this.ctx.fillText(name, c.x + c.width/2, nameY);
-                
-                // 체력바 그리기
-                if (c.health !== undefined && c.maxHealth !== undefined) {
-                    const barWidth = 40;
-                    const barHeight = 4;
-                    const barX = c.x + (c.width - barWidth) / 2;
-                    const barY = c.y - 15;
                     
-                    // 배경
-                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                    this.ctx.fillRect(barX, barY, barWidth, barHeight);
-                    
-                    // 체력
-                    const healthPercent = Math.max(0, c.health / c.maxHealth);
-                    this.ctx.fillStyle = healthPercent > 0.5 ? '#10b981' : healthPercent > 0.25 ? '#f59e0b' : '#ef4444';
-                    this.ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
-                }
-                
-                this.ctx.restore();
-            }
-        };
-
-        const _origRender = window.game.render;
-        window.game.render = function() {
-            _origRender.call(this);
-            
-            // 다른 플레이어들 그리기
-            if (this.gameState.otherPlayers) {
-                Object.entries(this.gameState.otherPlayers).forEach(([name, info]) => {
-                    // 유효한 데이터인지 확인
-                    if (info && typeof info.x === 'number' && typeof info.y === 'number' && info.isAlive !== false) {
-                        this.drawCharacter(info, name);
-                        
-                        // 다른 플레이어의 커서 그리기
-                        if (info.mouseX !== undefined && info.mouseY !== undefined) {
-                            this.ctx.save();
-                            this.ctx.strokeStyle = info.color || '#ef4444';
-                            this.ctx.lineWidth = 2;
-                            this.ctx.globalAlpha = 0.7;
-                            
-                            // 십자 모양 커서
-                            const size = 8;
-                            this.ctx.beginPath();
-                            this.ctx.moveTo(info.mouseX - size, info.mouseY);
-                            this.ctx.lineTo(info.mouseX + size, info.mouseY);
-                            this.ctx.moveTo(info.mouseX, info.mouseY - size);
-                            this.ctx.lineTo(info.mouseX, info.mouseY + size);
-                            this.ctx.stroke();
-                            
-                            // 원형 테두리
-                            this.ctx.beginPath();
-                            this.ctx.arc(info.mouseX, info.mouseY, size + 2, 0, Math.PI * 2);
-                            this.ctx.stroke();
-                            
-                            this.ctx.restore();
+                    // 4. 모든 플레이어가 상태 수신
+                    db.ref(`rooms/${roomId}/players`).on('value', snap => {
+                        const players = snap.val() || {};
+                        if (window.game) {
+                            window.game.gameState.players = players;
                         }
+                    });
+                    
+                    db.ref(`rooms/${roomId}/enemies`).on('value', snap => {
+                        const enemies = snap.val() || {};
+                        if (window.game) {
+                            window.game.gameState.enemies = enemies;
+                        }
+                    });
+                    
+                    db.ref(`rooms/${roomId}/gameState`).on('value', snap => {
+                        const gameState = snap.val() || {};
+                        if (window.game) {
+                            window.game.gameState.score = gameState.score || 0;
+                            window.game.gameState.level = gameState.level || 1;
+                            window.game.gameState.gameTime = gameState.gameTime || 0;
+                        }
+                    });
+                    
+                    db.ref(`rooms/${roomId}/items`).on('value', snap => {
+                        const items = snap.val() || {};
+                        if (window.game) {
+                            window.game.gameState.items = items;
+                        }
+                    });
+                    
+                    db.ref(`rooms/${roomId}/effects`).on('value', snap => {
+                        const effects = snap.val() || [];
+                        if (window.game) {
+                            window.game.gameState.effects = effects;
+                        }
+                    });
+                });
+                
+                let lastSyncTime = Date.now();
+                db.ref(`rooms/${roomId}/players`).on('value', snap => {
+                    lastSyncTime = Date.now();
+                    const players = snap.val() || {};
+                    if (window.game) {
+                        window.game.gameState.players = players;
+                    }
+                    // 방장 교체 감지
+                    const playerNames = Object.keys(players).sort();
+                    const newHost = playerNames[0];
+                    const wasHost = window.game.gameState.isHost;
+                    window.game.gameState.isHost = (newHost === playerName);
+                    if (!wasHost && window.game.gameState.isHost) {
+                        location.reload(); // 내가 새 방장이 되면 새로고침
                     }
                 });
+                setInterval(() => {
+                    if (!window.game.gameState.isHost && Date.now() - lastSyncTime > 2000) {
+                        window.game.showMessage('서버와 연결이 끊겼습니다. 재접속 해주세요.', '', 999999);
+                    }
+                }, 1000);
             }
-        };
+            
+            // === 입력 적용 함수 ===
+            function applyInputToPlayer(playerName, input) {
+                if (!window.game) return;
+                
+                // 플레이어 찾기 또는 생성
+                let player = window.game.gameState.players[playerName];
+                if (!player) {
+                    player = {
+                        x: Math.random() * 800 + 100,
+                        y: Math.random() * 600 + 100,
+                        health: 100,
+                        maxHealth: 100,
+                        score: 0,
+                        level: 1
+                    };
+                    window.game.gameState.players[playerName] = player;
+                }
+                
+                // 키 입력에 따른 이동
+                if (input.keys) {
+                    const speed = 5;
+                    if (input.keys.w || input.keys.ArrowUp) player.y -= speed;
+                    if (input.keys.s || input.keys.ArrowDown) player.y += speed;
+                    if (input.keys.a || input.keys.ArrowLeft) player.x -= speed;
+                    if (input.keys.d || input.keys.ArrowRight) player.x += speed;
+                    
+                    // 경계 체크
+                    player.x = Math.max(50, Math.min(750, player.x));
+                    player.y = Math.max(50, Math.min(550, player.y));
+                }
+                
+                // 마우스 조준
+                if (input.mouse) {
+                    player.aimX = input.mouse.x;
+                    player.aimY = input.mouse.y;
+                }
+                
+                // 발사 처리
+                if (input.shoot && !player.lastShootTime) {
+                    player.lastShootTime = Date.now();
+                    if (window.game.shootBullet) {
+                        window.game.shootBullet(playerName, player.x, player.y, player.aimX, player.aimY);
+                    }
+                } else if (!input.shoot) {
+                    player.lastShootTime = null;
+                }
+                
+                // 플레이어 상태 업데이트
+                window.game.gameState.players[playerName] = player;
+            }
+            
+            // === 플레이어별 발사 함수 ===
+            if (window.game && !window.game.shootBullet) {
+                window.game.shootBullet = function(playerName, x, y, aimX, aimY) {
+                    const angle = Math.atan2(aimY - y, aimX - x);
+                    const bullet = {
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * 10,
+                        vy: Math.sin(angle) * 10,
+                        player: playerName,
+                        damage: 25,
+                        life: 100
+                    };
+                    
+                    if (!this.gameState.bullets) this.gameState.bullets = [];
+                    this.gameState.bullets.push(bullet);
+                    
+                    // 발사 효과음
+                    if (this.sounds && this.sounds.shoot) {
+                        this.sounds.shoot.currentTime = 0;
+                        this.sounds.shoot.play();
+                    }
+                };
+            }
+            
+            // === 아이템 획득 동기화 함수 ===
+            if (window.game && !window.game.collectItem) {
+                window.game.collectItem = function(playerName, itemId) {
+                    if (!this.gameState.isHost) return; // 방장만 처리
+                    
+                    const item = this.gameState.items[itemId];
+                    if (!item) return;
+                    
+                    const player = this.gameState.players[playerName];
+                    if (!player) return;
+                    
+                    // 아이템 효과 적용
+                    switch(item.type) {
+                        case 'health':
+                            player.health = Math.min(player.maxHealth, player.health + 50);
+                            break;
+                        case 'speed':
+                            player.speedBoost = (player.speedBoost || 0) + 1;
+                            setTimeout(() => player.speedBoost = Math.max(0, (player.speedBoost || 0) - 1), 10000);
+                            break;
+                        case 'damage':
+                            player.damageBoost = (player.damageBoost || 0) + 1;
+                            setTimeout(() => player.damageBoost = Math.max(0, (player.damageBoost || 0) - 1), 10000);
+                            break;
+                    }
+                    
+                    // 아이템 제거
+                    delete this.gameState.items[itemId];
+                    
+                    // 점수 추가
+                    this.gameState.score += 100;
+                    
+                    // 특수효과 추가
+                    if (!this.gameState.effects) this.gameState.effects = [];
+                    this.gameState.effects.push({
+                        type: 'itemCollect',
+                        x: item.x,
+                        y: item.y,
+                        player: playerName,
+                        timestamp: Date.now()
+                    });
+                    
+                    console.log(`${playerName}이 아이템을 획득했습니다: ${item.type}`);
+                };
+            }
+            
+            // === 적 처치 동기화 함수 ===
+            if (window.game && !window.game.killEnemy) {
+                window.game.killEnemy = function(enemyId, killerName) {
+                    if (!this.gameState.isHost) return; // 방장만 처리
+                    
+                    const enemy = this.gameState.enemies[enemyId];
+                    if (!enemy) return;
+                    
+                    // 적 제거
+                    delete this.gameState.enemies[enemyId];
+                    
+                    // 점수 추가 (처치한 플레이어에게)
+                    if (killerName && this.gameState.players[killerName]) {
+                        this.gameState.players[killerName].score += enemy.score || 100;
+                    }
+                    this.gameState.score += enemy.score || 100;
+                    
+                    // 특수효과 추가
+                    if (!this.gameState.effects) this.gameState.effects = [];
+                    this.gameState.effects.push({
+                        type: 'enemyDeath',
+                        x: enemy.x,
+                        y: enemy.y,
+                        killer: killerName,
+                        timestamp: Date.now()
+                    });
+                    
+                    // 아이템 드롭 (20% 확률)
+                    if (Math.random() < 0.2) {
+                        const itemTypes = ['health', 'speed', 'damage'];
+                        const randomType = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+                        const itemId = 'item_' + Date.now() + '_' + Math.random();
+                        
+                        if (!this.gameState.items) this.gameState.items = {};
+                        this.gameState.items[itemId] = {
+                            x: enemy.x,
+                            y: enemy.y,
+                            type: randomType,
+                            timestamp: Date.now()
+                        };
+                    }
+                    
+                    console.log(`${killerName}이 적을 처치했습니다!`);
+                };
+            }
+            
+            // === 특수효과 처리 함수 ===
+            if (window.game && !window.game.processEffects) {
+                window.game.processEffects = function() {
+                    if (!this.gameState.effects) return;
+                    
+                    const now = Date.now();
+                    this.gameState.effects = this.gameState.effects.filter(effect => {
+                        // 3초 후 효과 제거
+                        return now - effect.timestamp < 3000;
+                    });
+                };
+            }
+            
+            // === 충돌 감지 동기화 함수 ===
+            if (window.game && !window.game.checkCollisions) {
+                window.game.checkCollisions = function() {
+                    if (!this.gameState.isHost) return; // 방장만 처리
+                    
+                    // 총알-적 충돌 감지
+                    if (this.gameState.bullets && this.gameState.enemies) {
+                        this.gameState.bullets.forEach((bullet, bulletIndex) => {
+                            Object.entries(this.gameState.enemies).forEach(([enemyId, enemy]) => {
+                                const distance = Math.sqrt(
+                                    Math.pow(bullet.x - enemy.x, 2) + 
+                                    Math.pow(bullet.y - enemy.y, 2)
+                                );
+                                
+                                if (distance < 30) { // 충돌 발생
+                                    // 적 체력 감소
+                                    enemy.health = (enemy.health || 100) - bullet.damage;
+                                    
+                                    // 총알 제거
+                                    this.gameState.bullets.splice(bulletIndex, 1);
+                                    
+                                    // 적이 죽었는지 확인
+                                    if (enemy.health <= 0) {
+                                        this.killEnemy(enemyId, bullet.player);
+                                    }
+                                    
+                                    // 특수효과 추가
+                                    if (!this.gameState.effects) this.gameState.effects = [];
+                                    this.gameState.effects.push({
+                                        type: 'bulletHit',
+                                        x: bullet.x,
+                                        y: bullet.y,
+                                        timestamp: Date.now()
+                                    });
+                                }
+                            });
+                        });
+                    }
+                    
+                    // 플레이어-아이템 충돌 감지
+                    if (this.gameState.players && this.gameState.items) {
+                        Object.entries(this.gameState.players).forEach(([playerName, player]) => {
+                            Object.entries(this.gameState.items).forEach(([itemId, item]) => {
+                                const distance = Math.sqrt(
+                                    Math.pow(player.x - item.x, 2) + 
+                                    Math.pow(player.y - item.y, 2)
+                                );
+                                
+                                if (distance < 40) { // 아이템 획득
+                                    this.collectItem(playerName, itemId);
+                                }
+                            });
+                        });
+                    }
+                };
+            }
+            
+            // === 온라인 플레이어 렌더링 함수 ===
+            if (window.game && !window.game.renderOnlinePlayers) {
+                window.game.renderOnlinePlayers = function(ctx) {
+                    if (!this.gameState.players) return;
+                    
+                    Object.entries(this.gameState.players).forEach(([playerName, player]) => {
+                        // 내 캐릭터는 건너뛰기 (이미 그려짐)
+                        if (playerName === this.gameState.myName) return;
+                        
+                        // 플레이어 그리기
+                        ctx.save();
+                        
+                        // 플레이어 색상 (다른 플레이어는 파란색)
+                        ctx.fillStyle = '#60a5fa';
+                        ctx.strokeStyle = '#1e40af';
+                        
+                        // 플레이어 몸체
+                        ctx.beginPath();
+                        ctx.arc(player.x, player.y, 20, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        
+                        // 플레이어 이름
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = '12px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(playerName, player.x, player.y - 35);
+                        
+                        // 체력바
+                        const healthBarWidth = 40;
+                        const healthBarHeight = 4;
+                        const healthPercent = player.health / player.maxHealth;
+                        
+                        ctx.fillStyle = '#dc2626';
+                        ctx.fillRect(player.x - healthBarWidth/2, player.y - 30, healthBarWidth, healthBarHeight);
+                        
+                        ctx.fillStyle = '#16a34a';
+                        ctx.fillRect(player.x - healthBarWidth/2, player.y - 30, healthBarWidth * healthPercent, healthBarHeight);
+                        
+                        // 조준선 (마우스 방향)
+                        if (player.aimX && player.aimY) {
+                            ctx.strokeStyle = '#60a5fa';
+                            ctx.lineWidth = 1;
+                            ctx.setLineDash([5, 5]);
+                            ctx.beginPath();
+                            ctx.moveTo(player.x, player.y);
+                            ctx.lineTo(player.aimX, player.aimY);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                        }
+                        
+                        ctx.restore();
+                    });
+                };
+            }
+            
+            // === 온라인 아이템 렌더링 함수 ===
+            if (window.game && !window.game.renderOnlineItems) {
+                window.game.renderOnlineItems = function(ctx) {
+                    if (!this.gameState.items) return;
+                    
+                    Object.entries(this.gameState.items).forEach(([itemId, item]) => {
+                        ctx.save();
+                        
+                        // 아이템 타입에 따른 색상
+                        switch(item.type) {
+                            case 'health':
+                                ctx.fillStyle = '#16a34a';
+                                break;
+                            case 'speed':
+                                ctx.fillStyle = '#f59e0b';
+                                break;
+                            case 'damage':
+                                ctx.fillStyle = '#dc2626';
+                                break;
+                            default:
+                                ctx.fillStyle = '#ffffff';
+                        }
+                        
+                        // 아이템 그리기
+                        ctx.beginPath();
+                        ctx.arc(item.x, item.y, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 아이템 테두리
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        
+                        ctx.restore();
+                    });
+                };
+            }
+            
+            // === 온라인 특수효과 렌더링 함수 ===
+            if (window.game && !window.game.renderOnlineEffects) {
+                window.game.renderOnlineEffects = function(ctx) {
+                    if (!this.gameState.effects) return;
+                    
+                    this.gameState.effects.forEach(effect => {
+                        ctx.save();
+                        
+                        switch(effect.type) {
+                            case 'itemCollect':
+                                // 아이템 획득 효과
+                                ctx.fillStyle = '#fbbf24';
+                                ctx.font = '16px Arial';
+                                ctx.textAlign = 'center';
+                                ctx.fillText('+100', effect.x, effect.y - 20);
+                                break;
+                                
+                            case 'enemyDeath':
+                                // 적 처치 효과
+                                ctx.fillStyle = '#dc2626';
+                                ctx.font = '14px Arial';
+                                ctx.textAlign = 'center';
+                                ctx.fillText('KILL!', effect.x, effect.y - 15);
+                                break;
+                                
+                            case 'bulletHit':
+                                // 총알 명중 효과
+                                ctx.fillStyle = '#fbbf24';
+                                ctx.beginPath();
+                                ctx.arc(effect.x, effect.y, 3, 0, Math.PI * 2);
+                                ctx.fill();
+                                break;
+                        }
+                        
+                        ctx.restore();
+                    });
+                };
+            }
+        })();
+
+
+        // === 채팅 기능 ===
+        (function() {
+            // roomId, myPlayerName은 이미 할당되어 있다고 가정
+            let chatRoomId = typeof myRoomKey !== 'undefined' ? myRoomKey : null;
+            let chatPlayerName = typeof myPlayerName !== 'undefined' ? myPlayerName : null;
+
+            // 채팅 UI 요소
+            const chatBox = document.getElementById('chatBox');
+            const chatMessages = document.getElementById('chatMessages');
+            const chatInput = document.getElementById('chatInput');
+            const chatSendBtn = document.getElementById('chatSendBtn');
+
+            // 채팅 메시지 출력 함수
+            function addChatMessage(name, msg, isMe) {
+                const div = document.createElement('div');
+                div.style.marginBottom = '2px';
+                div.innerHTML = `<b style="color:${isMe ? '#60a5fa' : '#fff'}">${name}</b>: ${msg}`;
+                chatMessages.appendChild(div);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // 채팅 전송
+            function sendChat() {
+                const msg = chatInput.value.trim();
+                if (!msg || !chatRoomId || !chatPlayerName) return;
+                firebase.database().ref(`rooms/${chatRoomId}/chat`).push({
+                    name: chatPlayerName,
+                    msg: msg,
+                    ts: Date.now()
+                });
+                chatInput.value = '';
+            }
+
+            // 채팅 전송 버튼/엔터키 이벤트
+            chatSendBtn.onclick = sendChat;
+            chatInput.onkeydown = function(e) {
+                if (e.key === 'Enter') sendChat();
+            };
+
+            // 채팅 수신
+            function listenChat() {
+                if (!chatRoomId) return;
+                firebase.database().ref(`rooms/${chatRoomId}/chat`).limitToLast(50).on('child_added', snap => {
+                    const { name, msg } = snap.val();
+                    addChatMessage(name, msg, name === chatPlayerName);
+                });
+            }
+
+            // 방 입장/생성 시 채팅 리스너 연결
+            setInterval(() => {
+                if (typeof myRoomKey !== 'undefined' && myRoomKey && chatRoomId !== myRoomKey) {
+                    chatRoomId = myRoomKey;
+                    chatPlayerName = myPlayerName;
+                    chatMessages.innerHTML = '';
+                    listenChat();
+                }
+            }, 1000);
+        })();
     </script>
 </body>
 </html>
