@@ -2220,22 +2220,22 @@
 
                 // 1. SHOP_ITEMS를 JS에 명확히 정의 (GlassCombatArena 클래스 내 constructor에 추가)
                 this.SHOP_ITEMS = [
-                    { text: '+100 최대 체력', type: 'maxHealth', value: 100, basePrice: 1000, purchaseCount: 0 },
-                    { text: '+50 현재 체력', type: 'currentHealth', value: 50, basePrice: 700, purchaseCount: 0 },
-                    { text: '+5 공격력', type: 'damage', value: 5, basePrice: 1200, purchaseCount: 0 },
-                    { text: '+1 이동 속도', type: 'speed', value: 1, basePrice: 900, purchaseCount: 0 },
-                    { text: '+1 다중 발사', type: 'multishot', value: 1, basePrice: 1500, purchaseCount: 0 },
-                    { text: '회전 칼날', type: 'orbiting_knife', value: 1, basePrice: 2000, purchaseCount: 0 },
-                    { text: '관통 사격', type: 'piercing_shot', value: 1, basePrice: 1800, purchaseCount: 0 },
-                    { text: '폭발 사격', type: 'explosive_shot', value: 1, basePrice: 1800, purchaseCount: 0 },
-                    { text: '도탄 사격', type: 'ricochet_shot', value: 1, basePrice: 1800, purchaseCount: 0 },
-                    { text: '유도 사격', type: 'homing_shot', value: 1, basePrice: 1800, purchaseCount: 0 },
-                    { text: '분열 사격', type: 'split_shot', value: 1, basePrice: 1800, purchaseCount: 0 },
-                    { text: '흡혈', type: 'life_steal', value: 0.05, basePrice: 2200, purchaseCount: 0 },
-                    { text: '치명타 확률', type: 'crit_chance', value: 0.05, basePrice: 2000, purchaseCount: 0 },
-                    { text: '재사용 대기시간 감소', type: 'cooldown_reduction', value: 0.05, basePrice: 2000, purchaseCount: 0 },
-                    { text: '방어력', type: 'armor', value: 5, basePrice: 2000, purchaseCount: 0 },
-                    { text: '탄약 자동 회복', type: 'ammo_regen', value: 1, basePrice: 1800, purchaseCount: 0 }
+                                    { text: '+100 최대 체력', type: 'maxHealth', value: 100, basePrice: 2000, purchaseCount: 0 },
+                { text: '+50 현재 체력', type: 'currentHealth', value: 50, basePrice: 1400, purchaseCount: 0 },
+                { text: '+5 공격력', type: 'damage', value: 5, basePrice: 2400, purchaseCount: 0 },
+                { text: '+1 이동 속도', type: 'speed', value: 1, basePrice: 1800, purchaseCount: 0 },
+                { text: '+1 다중 발사', type: 'multishot', value: 1, basePrice: 3000, purchaseCount: 0 },
+                { text: '회전 칼날', type: 'orbiting_knife', value: 1, basePrice: 4000, purchaseCount: 0 },
+                { text: '관통 사격', type: 'piercing_shot', value: 1, basePrice: 3600, purchaseCount: 0 },
+                { text: '폭발 사격', type: 'explosive_shot', value: 1, basePrice: 3600, purchaseCount: 0 },
+                { text: '도탄 사격', type: 'ricochet_shot', value: 1, basePrice: 3600, purchaseCount: 0 },
+                { text: '유도 사격', type: 'homing_shot', value: 1, basePrice: 3600, purchaseCount: 0 },
+                { text: '분열 사격', type: 'split_shot', value: 1, basePrice: 3600, purchaseCount: 0 },
+                { text: '흡혈', type: 'life_steal', value: 0.05, basePrice: 4400, purchaseCount: 0 },
+                { text: '치명타 확률', type: 'crit_chance', value: 0.05, basePrice: 4000, purchaseCount: 0 },
+                { text: '재사용 대기시간 감소', type: 'cooldown_reduction', value: 0.05, basePrice: 4000, purchaseCount: 0 },
+                { text: '방어력', type: 'armor', value: 5, basePrice: 4000, purchaseCount: 0 },
+                { text: '탄약 자동 회복', type: 'ammo_regen', value: 1, basePrice: 3600, purchaseCount: 0 }
                 ];
 
 
@@ -2826,6 +2826,7 @@
                         magnetRadius: 200,
                         lastHitById: null, // 초기화
                         type: 'player', // 플레이어 타입
+                        flies: false, // 플레이어는 날지 않음
                         orbitingKnives: [], // 회전 칼날 초기화
                         piercingShot: 0, // 관통 사격 초기화
                         explosiveShot: 0, // 폭발 사격 초기화
@@ -3157,12 +3158,12 @@
                     const scale = 2.5 * Math.pow(2.5, Math.floor(this.gameState.wave / 10));
                     enemyData.health = Math.floor(enemyData.health * scale);
                     enemyData.maxHealth = enemyData.health;
-                    enemyData.speed = enemyData.speed * (1 + (this.gameState.wave / 50)); // 속도 증가 완화
+                    enemyData.speed = enemyData.speed * (1 + (this.gameState.wave / 100)); // 속도 증가 대폭 완화
                     enemyData.damage = Math.floor(enemyData.damage * scale);
                     enemyData.points = Math.floor(enemyData.points * scale);
                 } else if (type.startsWith('boss')) {
-                    // 일반 보스 웨이브
-                    const scale = 2.5 * Math.pow(2.5, Math.floor(this.gameState.wave / 10));
+                    // 일반 보스 웨이브 - 훨씬 강하게
+                    const scale = 5.0 * Math.pow(2.5, Math.floor(this.gameState.wave / 10));
                     enemyData.health = Math.floor(enemyData.health * scale);
                     enemyData.maxHealth = enemyData.health;
                     enemyData.speed = enemyData.speed * (1 + (this.gameState.wave / 30));
@@ -3172,7 +3173,7 @@
                     // 일반 적
                     const scale = 1 + (this.gameState.wave - 1) * 0.12;
                     enemyData.health = Math.floor(enemyData.health * scale * 0.8);
-                    enemyData.maxHealth = enemyData.health;
+                    enemyData.maxHealth = enemyData.health; 
                     enemyData.speed = enemyData.speed * (1 + (this.gameState.wave - 1) * 0.04);
                     enemyData.damage = Math.floor(enemyData.damage * scale * 0.8);
                     enemyData.points = Math.floor(enemyData.points * scale);
@@ -3345,7 +3346,7 @@
                             explosiveRadius: player.explosiveShot > 0 ? (80 + player.explosiveShot * 20) : 0,
                             bounceCount: player.ricochetLevel,
                             isHoming: player.homingLevel > 0,
-                            homingStrength: player.homingLevel > 0 ? (0.05 + player.homingLevel * 0.01) : 0,
+                            homingStrength: player.homingLevel > 0 ? (0.03 + player.homingLevel * 0.005) : 0,
                             splitCount: player.splitLevel,
                             isCritical: isCritical,
                             hitEnemies: []
@@ -5221,18 +5222,37 @@
             
             // 발사체 상태 업데이트 및 충돌 감지 (유령 무적 상태 처리 추가)
             updateProjectiles = () => {
-
-
-                if (p.bounceCount && p.bounceCount > 0) {
-                    if (p.x < 0 || p.x > this.canvas.width) {
-                        p.vx *= -1;
-                        p.bounceCount--;
-                        p.x = Math.max(0, Math.min(this.canvas.width, p.x));
+                const projectilesToRemove = new Set();
+                const player = this.gameState.player;
+                
+                // 1. 발사체 이동/수명 및 도탄 처리
+                for (let i = 0; i < this.gameState.projectiles.length; i++) {
+                    const p = this.gameState.projectiles[i];
+                    
+                    // 도탄 처리
+                    if (p.bounceCount && p.bounceCount > 0) {
+                        if (p.x < 0 || p.x > this.canvas.width) {
+                            p.vx *= -1;
+                            p.bounceCount--;
+                            p.x = Math.max(0, Math.min(this.canvas.width, p.x));
+                        }
+                        if (p.y < 0 || p.y > this.canvas.height) {
+                            p.vy *= -1;
+                            p.bounceCount--;
+                            p.y = Math.max(0, Math.min(this.canvas.height, p.y));
+                        }
                     }
-                    if (p.y < 0 || p.y > this.canvas.height) {
-                        p.vy *= -1;
-                        p.bounceCount--;
-                        p.y = Math.max(0, Math.min(this.canvas.height, p.y));
+                    
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life--;
+                    if (
+                        p.x < -100 || p.x > this.canvas.width + 100 ||
+                        p.y < -100 || p.y > this.canvas.height + 100 ||
+                        p.life <= 0
+                    ) {
+                        projectilesToRemove.add(i);
+                        continue;
                     }
                 }
                 // Homing logic: adjust velocity of homing projectiles
@@ -5267,23 +5287,6 @@
                             // 적이 없으면 기존 방향/속도 유지 (정지하지 않음)
                             // 아무것도 하지 않음
                         }
-                    }
-                }
-                const projectilesToRemove = new Set();
-                const player = this.gameState.player;
-                // 1. 발사체 이동/수명
-                for (let i = 0; i < this.gameState.projectiles.length; i++) {
-                    const p = this.gameState.projectiles[i];
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.life--;
-                    if (
-                        p.x < -100 || p.x > this.canvas.width + 100 ||
-                        p.y < -100 || p.y > this.canvas.height + 100 ||
-                        p.life <= 0
-                    ) {
-                        projectilesToRemove.add(i);
-                        continue;
                     }
                 }
                 // 2. 플레이어 발사체 → 적 충돌
@@ -5347,7 +5350,7 @@
                                 this.createHitParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
                                 // 폭발 사격
                                 if (p.explosiveRadius && p.explosiveRadius > 0) {
-                                    this.createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, p.explosiveRadius, p.damage, p.ownerId);
+                                    this.createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, p.explosiveRadius, Math.floor(p.damage / 2), p.ownerId);
                                 }
                                 // 분열 사격
                                 if (p.splitCount && p.splitCount > 0) {
@@ -9053,6 +9056,12 @@
             // roomId, myPlayerName은 이미 할당되어 있다고 가정
             let chatRoomId = typeof myRoomKey !== 'undefined' ? myRoomKey : null;
             let chatPlayerName = typeof myPlayerName !== 'undefined' ? myPlayerName : null;
+            
+            // 솔로 플레이용 채팅 설정
+            if (!chatRoomId) {
+                chatRoomId = 'solo_chat';
+                chatPlayerName = 'Player';
+            }
 
             // 채팅 UI 요소
             const chatBox = document.getElementById('chatBox');
@@ -9073,11 +9082,18 @@
             function sendChat() {
                 const msg = chatInput.value.trim();
                 if (!msg || !chatRoomId || !chatPlayerName) return;
-                firebase.database().ref(`rooms/${chatRoomId}/chat`).push({
-                    name: chatPlayerName,
-                    msg: msg,
-                    ts: Date.now()
-                });
+                
+                if (chatRoomId === 'solo_chat') {
+                    // 솔로 플레이: 로컬 채팅
+                    addChatMessage(chatPlayerName, msg, true);
+                } else {
+                    // 온라인 플레이: Firebase 채팅
+                    firebase.database().ref(`rooms/${chatRoomId}/chat`).push({
+                        name: chatPlayerName,
+                        msg: msg,
+                        ts: Date.now()
+                    });
+                }
                 chatInput.value = '';
             }
 
@@ -9090,6 +9106,12 @@
             // 채팅 수신
             function listenChat() {
                 if (!chatRoomId) return;
+                
+                if (chatRoomId === 'solo_chat') {
+                    // 솔로 플레이: 채팅 수신 불필요
+                    return;
+                }
+                
                 firebase.database().ref(`rooms/${chatRoomId}/chat`).limitToLast(50).on('child_added', snap => {
                     const { name, msg } = snap.val();
                     addChatMessage(name, msg, name === chatPlayerName);
