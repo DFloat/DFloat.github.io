@@ -8183,6 +8183,9 @@
                 myNick = document.getElementById('multiNickname').value.trim();
                 roomId = document.getElementById('multiRoomId').value.trim();
                 if (!myNick || !roomId) return alert("닉네임과 방 코드를 입력하세요!");
+                
+                // 한국어 닉네임 지원
+                console.log('온라인 플레이 시작:', { nickname: myNick, roomId });
                 multiJoinPopup.style.display = 'none';
 
                 // 내 상태 DB에 등록
@@ -8602,6 +8605,10 @@
                         window.game.gameState.isHost = isHost;
                         window.game.gameState.roomId = roomId;
                         window.game.gameState.myName = playerName;
+                        // 온라인 플레이어 배열 초기화
+                        if (!window.game.gameState.players) {
+                            window.game.gameState.players = {};
+                        }
                     }
                     
                     // 1. 게스트 입력 전송 (게스트만)
@@ -9147,6 +9154,61 @@
                     });
                 };
             }
+            
+            // === 온라인 플레이어 렌더링 함수 ===
+            if (window.game && !window.game.renderOnlinePlayers) {
+                window.game.renderOnlinePlayers = function(ctx) {
+                    if (!this.gameState.players) return;
+                    
+                    Object.entries(this.gameState.players).forEach(([playerName, player]) => {
+                        if (!player || playerName === this.gameState.myName) return; // 내 플레이어는 제외
+                        
+                        ctx.save();
+                        
+                        // 플레이어 그리기
+                        ctx.fillStyle = '#60a5fa';
+                        ctx.beginPath();
+                        ctx.arc(player.x, player.y, 20, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 플레이어 테두리
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        
+                        // 플레이어 이름
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = '12px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(playerName, player.x, player.y - 35);
+                        
+                        // 체력바
+                        const healthBarWidth = 40;
+                        const healthBarHeight = 4;
+                        const healthPercent = player.health / player.maxHealth;
+                        
+                        ctx.fillStyle = '#dc2626';
+                        ctx.fillRect(player.x - healthBarWidth/2, player.y - 30, healthBarWidth, healthBarHeight);
+                        
+                        ctx.fillStyle = '#16a34a';
+                        ctx.fillRect(player.x - healthBarWidth/2, player.y - 30, healthBarWidth * healthPercent, healthBarHeight);
+                        
+                        // 조준선 (마우스 방향)
+                        if (player.aimX && player.aimY) {
+                            ctx.strokeStyle = '#60a5fa';
+                            ctx.lineWidth = 1;
+                            ctx.setLineDash([5, 5]);
+                            ctx.beginPath();
+                            ctx.moveTo(player.x, player.y);
+                            ctx.lineTo(player.aimX, player.aimY);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                        }
+                        
+                        ctx.restore();
+                    });
+                };
+            }
         })();
 
 
@@ -9188,8 +9250,25 @@
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
 
+            // Firebase 연결 상태 확인 함수
+            function isFirebaseConnected() {
+                return new Promise((resolve) => {
+                    try {
+                        const connectedRef = firebase.database().ref(".info/connected");
+                        connectedRef.once("value", function(snap) {
+                            resolve(snap.val() === true);
+                        }).catch(() => {
+                            resolve(false);
+                        });
+                    } catch (error) {
+                        console.log('Firebase 연결 상태 확인 실패:', error);
+                        resolve(false);
+                    }
+                });
+            }
+
             // 채팅 전송 함수
-            function sendChat() {
+            async function sendChat() {
                 const msg = chatInput.value.trim();
                 const nickname = chatNickname.value.trim() || 'Player';
                 
@@ -9200,14 +9279,26 @@
                     return;
                 }
                 
-                // 항상 Firebase 채팅 사용
-                console.log('Firebase 채팅 전송:', chatRoomId);
+                // Firebase 연결 상태 확인
+                const isConnected = await isFirebaseConnected();
+                if (!isConnected) {
+                    console.log('Firebase 연결이 끊어짐 - 로컬 채팅으로 폴백');
+                    addChatMessage(nickname, msg, true);
+                    chatInput.value = '';
+                    return;
+                }
+                
+                // 채팅방 ID가 없으면 공용 채팅방 사용
+                const targetRoomId = chatRoomId || 'public_chat';
+                console.log('Firebase 채팅 전송:', targetRoomId);
+                
                 try {
-                    firebase.database().ref(`rooms/${chatRoomId}/chat`).push({
+                    await firebase.database().ref(`rooms/${targetRoomId}/chat`).push({
                         name: nickname,
                         msg: msg,
                         ts: Date.now()
                     });
+                    console.log('채팅 전송 성공');
                 } catch (error) {
                     console.error('Firebase 채팅 전송 오류:', error);
                     // 오류 시 로컬 채팅으로 폴백
@@ -9217,9 +9308,16 @@
             }
 
             // 채팅 수신 함수
-            function listenChat() {
+            async function listenChat() {
                 if (!chatRoomId) {
                     console.log('채팅방 ID 없음 - 수신 불가');
+                    return;
+                }
+                
+                // Firebase 연결 상태 확인
+                const isConnected = await isFirebaseConnected();
+                if (!isConnected) {
+                    console.log('Firebase 연결이 끊어짐 - 채팅 수신 중단');
                     return;
                 }
                 
@@ -9227,7 +9325,11 @@
                 
                 // 기존 리스너 제거
                 if (chatListener) {
-                    firebase.database().ref(`rooms/${chatRoomId}/chat`).off('child_added', chatListener);
+                    try {
+                        firebase.database().ref(`rooms/${chatRoomId}/chat`).off('child_added', chatListener);
+                    } catch (error) {
+                        console.log('기존 리스너 제거 중 오류 (무시):', error);
+                    }
                 }
                 
                 // 새 리스너 등록
@@ -9239,15 +9341,33 @@
                     }
                 };
                 
-                firebase.database().ref(`rooms/${chatRoomId}/chat`).limitToLast(50).on('child_added', chatListener);
+                try {
+                    firebase.database().ref(`rooms/${chatRoomId}/chat`).limitToLast(50).on('child_added', chatListener);
+                    console.log('채팅 리스너 등록 성공');
+                } catch (error) {
+                    console.error('채팅 리스너 등록 실패:', error);
+                }
             }
 
             // 채팅 이벤트 바인딩
-            chatSendBtn.addEventListener('click', sendChat);
+            chatSendBtn.addEventListener('click', () => sendChat());
+
+            
+            // 띄어쓰기 문제 해결을 위한 추가 이벤트
+            chatInput.addEventListener('input', function(e) {
+                // 입력값이 정상적으로 업데이트되는지 확인
+                console.log('채팅 입력:', e.target.value);
+            });
+            
+            // 띄어쓰기 문제 해결 - keydown 이벤트 수정
             chatInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     sendChat();
+                }
+                // 띄어쓰기 허용
+                if (e.key === ' ') {
+                    e.stopPropagation();
                 }
             });
             chatNickname.addEventListener('keydown', function(e) {
@@ -9260,39 +9380,87 @@
             console.log('채팅 이벤트 바인딩 완료');
 
             // 방 입장/생성 시 채팅 리스너 연결
-            function updateChatRoom() {
+            async function updateChatRoom() {
                 const newRoomId = typeof myRoomKey !== 'undefined' ? myRoomKey : null;
                 const newPlayerName = typeof myPlayerName !== 'undefined' ? myPlayerName : 'Player';
                 
-                if (newRoomId !== chatRoomId || newPlayerName !== chatPlayerName) {
+                console.log('채팅 방 정보 확인:', { newRoomId, newPlayerName, currentRoom: chatRoomId });
+                
+                // 항상 공용 채팅방 사용 (온라인 방이 없어도)
+                const targetRoomId = newRoomId || 'public_chat';
+                
+                if (targetRoomId !== chatRoomId || newPlayerName !== chatPlayerName) {
                     console.log('채팅 방 정보 업데이트:', { 
                         oldRoom: chatRoomId, 
-                        newRoom: newRoomId, 
+                        newRoom: targetRoomId, 
                         oldPlayer: chatPlayerName, 
                         newPlayer: newPlayerName 
                     });
                     
-                    // 온라인 방이 있으면 사용, 없으면 공용 채팅방 사용
-                    chatRoomId = newRoomId || 'public_chat';
+                    chatRoomId = targetRoomId;
                     chatPlayerName = newPlayerName;
                     chatNickname.value = chatPlayerName;
                     chatMessages.innerHTML = '';
                     
-                    // 항상 Firebase 채팅 사용
-                    listenChat();
+                    // Firebase 연결 상태 확인 후 채팅 리스너 연결
+                    const isConnected = await isFirebaseConnected();
+                    if (isConnected) {
+                        await listenChat();
+                    } else {
+                        console.log('Firebase 연결이 끊어짐 - 채팅 리스너 연결 보류');
+                        addChatMessage('시스템', 'Firebase 연결이 끊어졌습니다. 연결을 기다리는 중...', false);
+                    }
                 }
             }
             
-            // 주기적으로 방 정보 확인
-            setInterval(updateChatRoom, 2000);
+            // Firebase 연결 상태 모니터링
+            let lastConnectionState = false;
+            try {
+                firebase.database().ref(".info/connected").on("value", function(snap) {
+                    const isConnected = snap.val() === true;
+                    if (isConnected !== lastConnectionState) {
+                        lastConnectionState = isConnected;
+                        if (isConnected) {
+                            console.log('Firebase 재연결됨 - 채팅 리스너 재연결');
+                            addChatMessage('시스템', 'Firebase에 재연결되었습니다!', false);
+                            if (chatRoomId) {
+                                setTimeout(() => listenChat(), 1000); // 1초 후 재연결
+                            }
+                        } else {
+                            console.log('Firebase 연결 끊어짐 - 채팅 리스너 정리');
+                            addChatMessage('시스템', 'Firebase 연결이 끊어졌습니다. 재연결을 시도합니다...', false);
+                            if (chatListener) {
+                                try {
+                                    firebase.database().ref(`rooms/${chatRoomId}/chat`).off('child_added', chatListener);
+                                    chatListener = null;
+                                } catch (error) {
+                                    console.log('리스너 정리 중 오류 (무시):', error);
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Firebase 연결 모니터링 설정 실패:', error);
+            }
+            
+            // 주기적으로 방 정보 확인 (연결 상태 고려)
+            setInterval(async () => {
+                const isConnected = await isFirebaseConnected();
+                if (isConnected) {
+                    await updateChatRoom();
+                }
+            }, 3000);
             
             // 초기 설정
-            updateChatRoom();
-            
-            // 테스트 메시지
-            setTimeout(() => {
-                addChatMessage('시스템', '채팅 시스템이 준비되었습니다! (Firebase 연동)', false);
-            }, 1000);
+            (async () => {
+                await updateChatRoom();
+                
+                // 테스트 메시지
+                setTimeout(() => {
+                    addChatMessage('시스템', '채팅 시스템이 준비되었습니다! (Firebase 연동)', false);
+                }, 1000);
+            })();
             
             console.log('채팅 시스템 초기화 완료');
         })();
