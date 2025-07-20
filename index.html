@@ -715,6 +715,16 @@
             backdrop-filter:blur(18px) saturate(1.5);
             -webkit-backdrop-filter:blur(18px) saturate(1.5);
         ">
+        <button id="closeChatBtn" style="position:absolute;top:5px;right:5px;z-index:10;">✖</button>
+        <div id="chatBoxContent" style="display:flex; flex-direction:column; gap:8px;">
+            <div id="chatMessages" style="
+                height:120px; overflow-y:auto;
+                background:rgba(255,255,255,0.18);
+                border-radius:10px; padding:8px 6px;
+                color:#222; font-size:15px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.07);
+            "></div>
+        </div>
             <div style="display:flex; gap:6px; margin-bottom:8px;">
                 <input id="chatNickname" type="text" maxlength="20" placeholder="닉네임" style="
                     width:80px; border-radius:8px; border:none; padding:7px 10px; font-size:15px;
@@ -3184,10 +3194,10 @@
                     enemyData.points = Math.floor(enemyData.points * scale);
                 } else {
                     // 일반 적
-                    const scale = 1 + (this.gameState.wave - 1) * 0.12;
+                    const scale = 1 + (this.gameState.wave - 1) * 0.20;
                     enemyData.health = Math.floor(enemyData.health * scale * 0.8);
                     enemyData.maxHealth = enemyData.health; 
-                    enemyData.speed = enemyData.speed * (1 + (this.gameState.wave - 1) * 0.04);
+                    enemyData.speed = enemyData.speed * (1 + (this.gameState.wave - 1) * 0.02);
                     enemyData.damage = Math.floor(enemyData.damage * scale * 0.8);
                     enemyData.points = Math.floor(enemyData.points * scale);
                 }
@@ -3592,6 +3602,7 @@
             
             // 웨이브 생성 (새로운 보스 시스템)
             spawnInitialWave = () => {
+                this.gameState.waveSpawning = false;
                 // 게임 상태가 spawning이 아니면 웨이브 생성 안함
                 if (this.gameState.gameStatus !== 'spawning' && this.gameState.gameStatus !== 'playing') return;
                 
@@ -9463,7 +9474,16 @@
             })();
             
             console.log('채팅 시스템 초기화 완료');
+            document.getElementById('closeChatBtn').onclick = function() {
+                document.getElementById('chatBox').style.display = 'none';
+                document.getElementById('openChatBtn').style.display = 'flex';
+            };
+                document.getElementById('openChatBtn').onclick = function() {
+                document.getElementById('chatBox').style.display = 'flex';
+                document.getElementById('openChatBtn').style.display = 'none';
+            };
         })();
     </script>
+    <button id="openChatBtn" style="position:fixed;bottom:24px;right:24px;z-index:10000;display:none;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.15);font-size:22px;align-items:center;justify-content:center;cursor:pointer;">💬</button>
 </body>
 </html>
