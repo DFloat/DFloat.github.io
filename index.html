@@ -698,7 +698,7 @@
     <canvas id="gameCanvas"></canvas>
 
     <div id="chatBox" style="
-        position:fixed; right:20px; bottom:20px; width:320px; z-index:20;
+        position:fixed; left:20px; bottom:20px; width:320px; z-index:5;
         background:rgba(255,255,255,0.13);
         border-radius:18px;
         padding:14px 14px 10px 14px;
@@ -709,6 +709,7 @@
         border:1.5px solid rgba(255,255,255,0.25);
         backdrop-filter:blur(18px) saturate(1.5);
         -webkit-backdrop-filter:blur(18px) saturate(1.5);
+        pointer-events:auto;
     ">
     <div style="display:flex; gap:6px; margin-bottom:8px;">
         <input id="chatNickname" type="text" maxlength="20" placeholder="닉네임" style="
@@ -739,69 +740,70 @@
     
     <!-- HUD 요소들 -->
     <div class="hud">
-        <div class="glass-card hud-item" style="display:flex; flex-direction:row; align-items:center; gap:22px; min-width:unset; max-width:unset;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <div style="width:8px; height:8px; background:#ef4444; border-radius:50%; animation:pulse 2s infinite;"></div>
-                    <span>체력</span>
-                    <div class="health-bar" style="width:70px; margin:0 4px;"><div class="health-fill" id="healthFill" style="width:100%;"></div></div>
-                    <span id="healthText">100/100</span>
+        <div class="glass-card hud-item" style="display:flex; flex-direction:row; align-items:center; gap:12px; max-width:90vw; overflow-x:auto;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap;">
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <div style="width:6px; height:6px; background:#ef4444; border-radius:50%; animation:pulse 2s infinite;"></div>
+                    <span style="font-size:12px;">체력</span>
+                    <div class="health-bar" style="width:60px; margin:0 2px;"><div class="health-fill" id="healthFill" style="width:100%;"></div></div>
+                    <span id="healthText" style="font-size:12px;">100/100</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:6px; margin-left:16px;">
-                    <div style="width:8px; height:8px; background:#3b82f6; border-radius:50%; animation:pulse 2s infinite;"></div>
-                    <span>탄약</span>
-                    <div class="ammo-bar" style="width:70px; margin:0 4px;"><div class="ammo-fill" id="ammoFill" style="width:100%;"></div></div>
-                    <span id="ammoText">60/60</span>
+                <div style="display:flex; align-items:center; gap:4px; margin-left:8px;">
+                    <div style="width:6px; height:6px; background:#3b82f6; border-radius:50%; animation:pulse 2s infinite;"></div>
+                    <span style="font-size:12px;">탄약</span>
+                    <div class="ammo-bar" style="width:60px; margin:0 2px;"><div class="ammo-fill" id="ammoFill" style="width:100%;"></div></div>
+                    <span id="ammoText" style="font-size:12px;">60/60</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:6px; margin-left:16px;">
-                    <div style="width:8px; height:8px; background:#8b5cf6; border-radius:50%;"></div>
-                    <span>속도</span>
-                    <span id="speedText">5</span>
+                <div style="display:flex; align-items:center; gap:4px; margin-left:8px;">
+                    <div style="width:6px; height:6px; background:#8b5cf6; border-radius:50%;"></div>
+                    <span style="font-size:12px;">속도</span>
+                    <span id="speedText" style="font-size:12px;">5</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:6px; margin-left:16px;">
-                    <div style="width:8px; height:8px; background:#dc2626; border-radius:50%;"></div>
-                    <span>공격력</span>
-                    <span id="damageText">20</span>
+                <div style="display:flex; align-items:center; gap:4px; margin-left:8px;">
+                    <div style="width:6px; height:6px; background:#dc2626; border-radius:50%;"></div>
+                    <span style="font-size:12px;">공격력</span>
+                    <span id="damageText" style="font-size:12px;">20</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:6px; margin-left:16px;">
-                    <div style="width:8px; height:8px; background:#7c3aed; border-radius:50%;"></div>
-                    <span>다중 발사</span>
-                    <span id="multishotText">1</span>
+                <div style="display:flex; align-items:center; gap:4px; margin-left:8px;">
+                    <div style="width:6px; height:6px; background:#7c3aed; border-radius:50%;"></div>
+                    <span style="font-size:12px;">다중</span>
+                    <span id="multishotText" style="font-size:12px;">1</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:6px; margin-left:16px;">
-                    <span style="color:white; font-weight:600;">활성 효과</span>
-                    <div id="activeEffects" style="font-size:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-                        <div id="invincibilityEffect"></div>
-                        <div id="shieldBoostEffect"></div>
-                        <div id="timeSlowEffect"></div>
-                        <div id="magnetEffect"></div>
-                        <div id="healthRegenEffect"></div>
-                        <div id="rapidFireEffect"></div>
-                        <div id="piercingShotEffect"></div>
-                        <div id="explosiveShotEffect"></div>
-                        <div id="orbitingKnivesEffect"></div>
-                        <div id="ricochetShotEffect"></div>
-                        <div id="homingShotEffect"></div>
-                        <div id="splitShotEffect"></div>
-                        <div id="ammoRegenEffect"></div>
-                        <div id="timeStopEffect"></div>
-                        <div id="dashEffect"></div>
-                        <div id="lifeStealEffect"></div>
-                        <div id="critChanceEffect"></div>
-                        <div id="cooldownReductionEffect"></div>
-                        <div id="armorEffect"></div>
-                    </div>
-                </div>
-                <!-- 점수/웨이브/적 수 표시 (오른쪽 끝에 가로로) -->
-                <span id="scoreText" style="margin-left:22px; color:#fff; font-size:1.1em; font-weight:600;"></span>
-                <span id="waveText" style="margin-left:14px; color:#fff; font-size:1.1em; font-weight:600;"></span>
-                <span id="enemyCount" style="margin-left:14px; color:#fff; font-size:1.1em; font-weight:600;"></span>
-                <!-- 1. HUD에 XP와 상점 버튼 추가 -->
-                <span id="xpText" style="margin-left:18px; color:#ffe066; font-size:1.1em; font-weight:600;"></span>
-                <button id="shopButton" style="margin-left:12px; font-size:1em; border-radius:6px; border:none; background:#ffe066; color:#222; padding:4px 16px; cursor:pointer;">상점</button>
-                <button id="testZoneHUDButton" style="margin-left:12px; font-size:1em; border-radius:6px; border:none; background:#ff6b6b; color:#fff; padding:4px 16px; cursor:pointer; display:none;">테스트 존</button>
-                <button id="enemyDexHUDButton" style="margin-left:12px; font-size:1em; border-radius:6px; border:none; background:#8b5cf6; color:#fff; padding:4px 16px; cursor:pointer;">적 도감</button>
+                <!-- 점수/웨이브/적 수 표시 -->
+                <span id="scoreText" style="margin-left:12px; color:#fff; font-size:12px; font-weight:600;"></span>
+                <span id="waveText" style="margin-left:8px; color:#fff; font-size:12px; font-weight:600;"></span>
+                <span id="enemyCount" style="margin-left:8px; color:#fff; font-size:12px; font-weight:600;"></span>
+                <!-- XP와 버튼들 -->
+                <span id="xpText" style="margin-left:12px; color:#ffe066; font-size:12px; font-weight:600;"></span>
+                <button id="shopButton" style="margin-left:8px; font-size:11px; border-radius:4px; border:none; background:#ffe066; color:#222; padding:3px 12px; cursor:pointer;">상점</button>
+                <button id="testZoneHUDButton" style="margin-left:8px; font-size:11px; border-radius:4px; border:none; background:#ff6b6b; color:#fff; padding:3px 12px; cursor:pointer; display:none;">테스트</button>
+                <button id="enemyDexHUDButton" style="margin-left:8px; font-size:11px; border-radius:4px; border:none; background:#8b5cf6; color:#fff; padding:3px 12px; cursor:pointer;">도감</button>
             </div>
+        </div>
+    </div>
+    
+    <!-- 활성 효과 표시 (별도 행) -->
+    <div id="activeEffectsContainer" style="position:fixed; top:50px; left:50%; transform:translateX(-50%); z-index:30; display:none;">
+        <div id="activeEffects" style="font-size:11px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:6px; backdrop-filter:blur(10px);">
+            <div id="invincibilityEffect"></div>
+            <div id="shieldBoostEffect"></div>
+            <div id="timeSlowEffect"></div>
+            <div id="magnetEffect"></div>
+            <div id="healthRegenEffect"></div>
+            <div id="rapidFireEffect"></div>
+            <div id="piercingShotEffect"></div>
+            <div id="explosiveShotEffect"></div>
+            <div id="orbitingKnivesEffect"></div>
+            <div id="ricochetShotEffect"></div>
+            <div id="homingShotEffect"></div>
+            <div id="splitShotEffect"></div>
+            <div id="ammoRegenEffect"></div>
+            <div id="timeStopEffect"></div>
+            <div id="dashEffect"></div>
+            <div id="lifeStealEffect"></div>
+            <div id="critChanceEffect"></div>
+            <div id="cooldownReductionEffect"></div>
+            <div id="armorEffect"></div>
         </div>
     </div>
     
@@ -1024,7 +1026,7 @@
     </div>
 
     <!-- 미니맵 (HUD 아래 오른쪽 등 원하는 위치로 조정 가능) -->
-    <div class="minimap" id="minimap" style="position:fixed; top:60px; right:32px; z-index:15;">
+    <div class="minimap" id="minimap" style="position:fixed; top:60px; right:32px; z-index:10;">
         <div class="minimap-player" id="minimapPlayer"></div>
     </div>
 
@@ -6674,6 +6676,35 @@
                 const ammoRegenEl = document.getElementById('ammoRegenEffect');
                 const timeStopEl = document.getElementById('timeStopEffect');
                 const dashEl = document.getElementById('dashEffect');
+                
+                // 활성 효과 컨테이너 표시/숨김 처리
+                const activeEffectsContainer = document.getElementById('activeEffectsContainer');
+                const hasActiveEffects = now < player.invincibleEndTime || 
+                                       now < player.shieldBoostEndTime || 
+                                       now < this.gameState.timeSlowEndTime || 
+                                       now < player.magnetEndTime || 
+                                       now < player.healthRegenEndTime || 
+                                       now < player.rapidFireTime || 
+                                       player.piercingShot > 0 || 
+                                       player.explosiveShot > 0 || 
+                                       player.orbitingKnives.length > 0 || 
+                                       player.ricochetLevel > 0 || 
+                                       player.homingLevel > 0 || 
+                                       player.splitLevel > 0 || 
+                                       now < player.ammoRegenEndTime || 
+                                       now < this.gameState.timeStopEndTime || 
+                                       player.isDashing || 
+                                       now - player.dashCooldown < 1000 || 
+                                       player.lifeStealPercent > 0 || 
+                                       player.critChance > 0 || 
+                                       player.cooldownReduction > 0 || 
+                                       player.armor > 0;
+                
+                if (hasActiveEffects) {
+                    activeEffectsContainer.style.display = 'block';
+                } else {
+                    activeEffectsContainer.style.display = 'none';
+                }
 
                 invincibilityEl.textContent = now < player.invincibleEndTime ? `무적: ${( (player.invincibleEndTime - now) / 1000).toFixed(1)}초` : '';
                 shieldBoostEl.textContent = now < player.shieldBoostEndTime ? `쉴드 강화: ${( (player.shieldBoostEndTime - now) / 1000).toFixed(1)}초 (${(1 - player.damageReductionFactor) * 100}% 감소)` : '';
@@ -9072,7 +9103,11 @@
             const chatBox = document.getElementById('chatBox');
             const chatMessages = document.getElementById('chatMessages');
             const chatInput = document.getElementById('chatInput');
+            const chatNickname = document.getElementById('chatNickname');
             const chatSendBtn = document.getElementById('chatSendBtn');
+
+            // 닉네임 초기값 설정
+            chatNickname.value = chatPlayerName || 'Player';
 
             // 채팅 메시지 출력 함수
             function addChatMessage(name, msg, isMe) {
@@ -9086,15 +9121,16 @@
             // 채팅 전송
             function sendChat() {
                 const msg = chatInput.value.trim();
-                if (!msg || !chatRoomId || !chatPlayerName) return;
+                const nickname = chatNickname.value.trim() || 'Player';
+                if (!msg) return;
                 
                 if (chatRoomId === 'solo_chat') {
                     // 솔로 플레이: 로컬 채팅
-                    addChatMessage(chatPlayerName, msg, true);
+                    addChatMessage(nickname, msg, true);
                 } else {
                     // 온라인 플레이: Firebase 채팅
                     firebase.database().ref(`rooms/${chatRoomId}/chat`).push({
-                        name: chatPlayerName,
+                        name: nickname,
                         msg: msg,
                         ts: Date.now()
                     });
@@ -9106,6 +9142,11 @@
             chatSendBtn.onclick = sendChat;
             chatInput.onkeydown = function(e) {
                 if (e.key === 'Enter') sendChat();
+            };
+            chatNickname.onkeydown = function(e) {
+                if (e.key === 'Enter') {
+                    chatInput.focus();
+                }
             };
 
             // 채팅 수신
@@ -9128,6 +9169,7 @@
                 if (typeof myRoomKey !== 'undefined' && myRoomKey && chatRoomId !== myRoomKey) {
                     chatRoomId = myRoomKey;
                     chatPlayerName = myPlayerName;
+                    chatNickname.value = chatPlayerName || 'Player';
                     chatMessages.innerHTML = '';
                     listenChat();
                 }
