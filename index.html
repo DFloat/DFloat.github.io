@@ -700,7 +700,7 @@
     <!-- 채팅창을 별도 컨테이너로 분리 -->
     <div id="chatContainer" style="
         position:fixed; top:0; left:0; width:100vw; height:100vh; 
-        pointer-events:none; z-index:9999; display:flex; justify-content:flex-end; align-items:flex-start; padding:20px;
+        pointer-events:none; z-index:9999; display:flex; justify-content:flex-start; align-items:flex-end; padding:20px;
     ">
         <div id="chatBox" style="
             width:320px; pointer-events:auto;
@@ -8637,17 +8637,31 @@
                             if (window.game) {
                                 // 플레이어 상태 동기화
                                 db.ref(`rooms/${roomId}/players`).set(window.game.gameState.players);
-                                // 적 상태 동기화
-                                db.ref(`rooms/${roomId}/enemies`).set(window.game.gameState.enemies);
+                                // 적 상태 동기화 (배열을 객체로 변환하여 저장)
+                                const enemiesObj = {};
+                                if (window.game.gameState.enemies && Array.isArray(window.game.gameState.enemies)) {
+                                    window.game.gameState.enemies.forEach((enemy, index) => {
+                                        enemiesObj[index] = enemy;
+                                    });
+                                }
+                                db.ref(`rooms/${roomId}/enemies`).set(enemiesObj);
+                                
                                 // 게임 상태 동기화
                                 db.ref(`rooms/${roomId}/gameState`).set({
                                     score: window.game.gameState.score,
                                     level: window.game.gameState.level,
                                     gameTime: window.game.gameState.gameTime
                                 });
-                                // 아이템 상태 동기화
+                                
+                                // 아이템 상태 동기화 (배열을 객체로 변환하여 저장)
                                 if (window.game.gameState.items) {
-                                    db.ref(`rooms/${roomId}/items`).set(window.game.gameState.items);
+                                    const itemsObj = {};
+                                    if (Array.isArray(window.game.gameState.items)) {
+                                        window.game.gameState.items.forEach((item, index) => {
+                                            itemsObj[index] = item;
+                                        });
+                                    }
+                                    db.ref(`rooms/${roomId}/items`).set(itemsObj);
                                 }
                                 // 특수효과 동기화
                                 if (window.game.gameState.effects) {
@@ -8668,7 +8682,12 @@
                     db.ref(`rooms/${roomId}/enemies`).on('value', snap => {
                         const enemies = snap.val() || {};
                         if (window.game) {
-                            window.game.gameState.enemies = enemies;
+                            // Firebase에서 받은 객체를 배열로 변환
+                            if (enemies && typeof enemies === 'object' && !Array.isArray(enemies)) {
+                                window.game.gameState.enemies = Object.values(enemies);
+                            } else {
+                                window.game.gameState.enemies = enemies || [];
+                            }
                         }
                     });
                     
@@ -8684,7 +8703,12 @@
                     db.ref(`rooms/${roomId}/items`).on('value', snap => {
                         const items = snap.val() || {};
                         if (window.game) {
-                            window.game.gameState.items = items;
+                            // Firebase에서 받은 객체를 배열로 변환
+                            if (items && typeof items === 'object' && !Array.isArray(items)) {
+                                window.game.gameState.items = Object.values(items);
+                            } else {
+                                window.game.gameState.items = items || [];
+                            }
                         }
                     });
                     
@@ -9178,8 +9202,15 @@
                     chatNickname.value = chatPlayerName || 'Player';
                     chatMessages.innerHTML = '';
                     listenChat();
+                    console.log('채팅 리스너 연결됨:', chatRoomId, chatPlayerName);
                 }
             }, 1000);
+            
+            // 초기 채팅 리스너 연결
+            if (chatRoomId && chatRoomId !== 'solo_chat') {
+                listenChat();
+                console.log('초기 채팅 리스너 연결됨:', chatRoomId);
+            }
         })();
     </script>
 </body>
