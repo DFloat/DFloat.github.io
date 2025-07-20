@@ -8635,13 +8635,30 @@
                         // 3. 방장이 처리한 결과 동기화
                         setInterval(() => {
                             if (window.game) {
-                                // 플레이어 상태 동기화
-                                db.ref(`rooms/${roomId}/players`).set(window.game.gameState.players);
-                                // 적 상태 동기화 (배열을 객체로 변환하여 저장)
+                                // NaN 값 필터링 함수
+                                function filterNaNValues(obj) {
+                                    if (typeof obj !== 'object' || obj === null) return obj;
+                                    const filtered = {};
+                                    for (const [key, value] of Object.entries(obj)) {
+                                        if (typeof value === 'number' && isNaN(value)) {
+                                            filtered[key] = 0; // NaN을 0으로 대체
+                                        } else if (typeof value === 'object' && value !== null) {
+                                            filtered[key] = filterNaNValues(value);
+                                        } else {
+                                            filtered[key] = value;
+                                        }
+                                    }
+                                    return filtered;
+                                }
+                                
+                                // 플레이어 상태 동기화 (NaN 값 필터링)
+                                const cleanPlayers = filterNaNValues(window.game.gameState.players);
+                                db.ref(`rooms/${roomId}/players`).set(cleanPlayers);
+                                // 적 상태 동기화 (배열을 객체로 변환하여 저장, NaN 값 필터링)
                                 const enemiesObj = {};
                                 if (window.game.gameState.enemies && Array.isArray(window.game.gameState.enemies)) {
                                     window.game.gameState.enemies.forEach((enemy, index) => {
-                                        enemiesObj[index] = enemy;
+                                        enemiesObj[index] = filterNaNValues(enemy);
                                     });
                                 }
                                 db.ref(`rooms/${roomId}/enemies`).set(enemiesObj);
@@ -8653,12 +8670,12 @@
                                     gameTime: window.game.gameState.gameTime
                                 });
                                 
-                                // 아이템 상태 동기화 (배열을 객체로 변환하여 저장)
+                                // 아이템 상태 동기화 (배열을 객체로 변환하여 저장, NaN 값 필터링)
                                 if (window.game.gameState.items) {
                                     const itemsObj = {};
                                     if (Array.isArray(window.game.gameState.items)) {
                                         window.game.gameState.items.forEach((item, index) => {
-                                            itemsObj[index] = item;
+                                            itemsObj[index] = filterNaNValues(item);
                                         });
                                     }
                                     db.ref(`rooms/${roomId}/items`).set(itemsObj);
@@ -8751,8 +8768,8 @@
                 let player = window.game.gameState.players[playerName];
                 if (!player) {
                     player = {
-                        x: Math.random() * 800 + 100,
-                        y: Math.random() * 600 + 100,
+                        x: Math.floor(Math.random() * 800 + 100),
+                        y: Math.floor(Math.random() * 600 + 100),
                         health: 100,
                         maxHealth: 100,
                         score: 0,
@@ -8760,6 +8777,14 @@
                     };
                     window.game.gameState.players[playerName] = player;
                 }
+                
+                // 기존 플레이어의 NaN 값 수정
+                if (isNaN(player.x)) player.x = 400;
+                if (isNaN(player.y)) player.y = 300;
+                if (isNaN(player.health)) player.health = 100;
+                if (isNaN(player.maxHealth)) player.maxHealth = 100;
+                if (isNaN(player.score)) player.score = 0;
+                if (isNaN(player.level)) player.level = 1;
                 
                 // 키 입력에 따른 이동
                 if (input.keys) {
@@ -8769,15 +8794,23 @@
                     if (input.keys.a || input.keys.ArrowLeft) player.x -= speed;
                     if (input.keys.d || input.keys.ArrowRight) player.x += speed;
                     
-                    // 경계 체크
-                    player.x = Math.max(50, Math.min(750, player.x));
-                    player.y = Math.max(50, Math.min(550, player.y));
+                    // 경계 체크 및 NaN 방지
+                    player.x = Math.max(50, Math.min(750, player.x || 400));
+                    player.y = Math.max(50, Math.min(550, player.y || 300));
+                    
+                    // NaN 값 방지
+                    if (isNaN(player.x)) player.x = 400;
+                    if (isNaN(player.y)) player.y = 300;
                 }
                 
                 // 마우스 조준
                 if (input.mouse) {
-                    player.aimX = input.mouse.x;
-                    player.aimY = input.mouse.y;
+                    player.aimX = input.mouse.x || player.x;
+                    player.aimY = input.mouse.y || player.y;
+                    
+                    // NaN 값 방지
+                    if (isNaN(player.aimX)) player.aimX = player.x;
+                    if (isNaN(player.aimY)) player.aimY = player.y;
                 }
                 
                 // 발사 처리
@@ -9119,98 +9152,149 @@
 
         // === 채팅 기능 ===
         (function() {
-            // roomId, myPlayerName은 이미 할당되어 있다고 가정
-            let chatRoomId = typeof myRoomKey !== 'undefined' ? myRoomKey : null;
-            let chatPlayerName = typeof myPlayerName !== 'undefined' ? myPlayerName : null;
+            console.log('채팅 시스템 초기화 시작');
             
-            // 솔로 플레이용 채팅 설정
-            if (!chatRoomId) {
-                chatRoomId = 'solo_chat';
-                chatPlayerName = 'Player';
-            }
-
             // 채팅 UI 요소
             const chatBox = document.getElementById('chatBox');
             const chatMessages = document.getElementById('chatMessages');
             const chatInput = document.getElementById('chatInput');
             const chatNickname = document.getElementById('chatNickname');
             const chatSendBtn = document.getElementById('chatSendBtn');
+            
+            if (!chatBox || !chatMessages || !chatInput || !chatNickname || !chatSendBtn) {
+                console.error('채팅 UI 요소를 찾을 수 없습니다');
+                return;
+            }
+            
+            console.log('채팅 UI 요소 찾음:', { chatBox, chatMessages, chatInput, chatNickname, chatSendBtn });
+
+            // 채팅 상태 변수
+            let chatRoomId = null;
+            let chatPlayerName = 'Player';
+            let chatListener = null;
 
             // 닉네임 초기값 설정
-            chatNickname.value = chatPlayerName || 'Player';
+            chatNickname.value = chatPlayerName;
 
             // 채팅 메시지 출력 함수
             function addChatMessage(name, msg, isMe) {
+                console.log('채팅 메시지 추가:', { name, msg, isMe });
                 const div = document.createElement('div');
-                div.style.marginBottom = '2px';
+                div.style.marginBottom = '4px';
+                div.style.fontSize = '12px';
+                div.style.wordBreak = 'break-word';
                 div.innerHTML = `<b style="color:${isMe ? '#60a5fa' : '#fff'}">${name}</b>: ${msg}`;
                 chatMessages.appendChild(div);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
 
-            // 채팅 전송
+            // 채팅 전송 함수
             function sendChat() {
                 const msg = chatInput.value.trim();
                 const nickname = chatNickname.value.trim() || 'Player';
-                if (!msg) return;
                 
-                if (chatRoomId === 'solo_chat') {
-                    // 솔로 플레이: 로컬 채팅
-                    addChatMessage(nickname, msg, true);
-                } else {
-                    // 온라인 플레이: Firebase 채팅
+                console.log('채팅 전송 시도:', { msg, nickname, chatRoomId });
+                
+                if (!msg) {
+                    console.log('빈 메시지 무시');
+                    return;
+                }
+                
+                // 항상 Firebase 채팅 사용
+                console.log('Firebase 채팅 전송:', chatRoomId);
+                try {
                     firebase.database().ref(`rooms/${chatRoomId}/chat`).push({
                         name: nickname,
                         msg: msg,
                         ts: Date.now()
                     });
+                } catch (error) {
+                    console.error('Firebase 채팅 전송 오류:', error);
+                    // 오류 시 로컬 채팅으로 폴백
+                    addChatMessage(nickname, msg, true);
                 }
                 chatInput.value = '';
             }
 
-            // 채팅 전송 버튼/엔터키 이벤트
-            chatSendBtn.onclick = sendChat;
-            chatInput.onkeydown = function(e) {
-                if (e.key === 'Enter') sendChat();
-            };
-            chatNickname.onkeydown = function(e) {
-                if (e.key === 'Enter') {
-                    chatInput.focus();
-                }
-            };
-
-            // 채팅 수신
+            // 채팅 수신 함수
             function listenChat() {
-                if (!chatRoomId) return;
-                
-                if (chatRoomId === 'solo_chat') {
-                    // 솔로 플레이: 채팅 수신 불필요
+                if (!chatRoomId) {
+                    console.log('채팅방 ID 없음 - 수신 불가');
                     return;
                 }
                 
-                firebase.database().ref(`rooms/${chatRoomId}/chat`).limitToLast(50).on('child_added', snap => {
-                    const { name, msg } = snap.val();
-                    addChatMessage(name, msg, name === chatPlayerName);
-                });
+                console.log('채팅 수신 시작:', chatRoomId);
+                
+                // 기존 리스너 제거
+                if (chatListener) {
+                    firebase.database().ref(`rooms/${chatRoomId}/chat`).off('child_added', chatListener);
+                }
+                
+                // 새 리스너 등록
+                chatListener = function(snap) {
+                    const data = snap.val();
+                    if (data && data.name && data.msg) {
+                        console.log('채팅 메시지 수신:', data);
+                        addChatMessage(data.name, data.msg, data.name === chatPlayerName);
+                    }
+                };
+                
+                firebase.database().ref(`rooms/${chatRoomId}/chat`).limitToLast(50).on('child_added', chatListener);
             }
 
-            // 방 입장/생성 시 채팅 리스너 연결
-            setInterval(() => {
-                if (typeof myRoomKey !== 'undefined' && myRoomKey && chatRoomId !== myRoomKey) {
-                    chatRoomId = myRoomKey;
-                    chatPlayerName = myPlayerName;
-                    chatNickname.value = chatPlayerName || 'Player';
-                    chatMessages.innerHTML = '';
-                    listenChat();
-                    console.log('채팅 리스너 연결됨:', chatRoomId, chatPlayerName);
+            // 채팅 이벤트 바인딩
+            chatSendBtn.addEventListener('click', sendChat);
+            chatInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendChat();
                 }
+            });
+            chatNickname.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    chatInput.focus();
+                }
+            });
+            
+            console.log('채팅 이벤트 바인딩 완료');
+
+            // 방 입장/생성 시 채팅 리스너 연결
+            function updateChatRoom() {
+                const newRoomId = typeof myRoomKey !== 'undefined' ? myRoomKey : null;
+                const newPlayerName = typeof myPlayerName !== 'undefined' ? myPlayerName : 'Player';
+                
+                if (newRoomId !== chatRoomId || newPlayerName !== chatPlayerName) {
+                    console.log('채팅 방 정보 업데이트:', { 
+                        oldRoom: chatRoomId, 
+                        newRoom: newRoomId, 
+                        oldPlayer: chatPlayerName, 
+                        newPlayer: newPlayerName 
+                    });
+                    
+                    // 온라인 방이 있으면 사용, 없으면 공용 채팅방 사용
+                    chatRoomId = newRoomId || 'public_chat';
+                    chatPlayerName = newPlayerName;
+                    chatNickname.value = chatPlayerName;
+                    chatMessages.innerHTML = '';
+                    
+                    // 항상 Firebase 채팅 사용
+                    listenChat();
+                }
+            }
+            
+            // 주기적으로 방 정보 확인
+            setInterval(updateChatRoom, 2000);
+            
+            // 초기 설정
+            updateChatRoom();
+            
+            // 테스트 메시지
+            setTimeout(() => {
+                addChatMessage('시스템', '채팅 시스템이 준비되었습니다! (Firebase 연동)', false);
             }, 1000);
             
-            // 초기 채팅 리스너 연결
-            if (chatRoomId && chatRoomId !== 'solo_chat') {
-                listenChat();
-                console.log('초기 채팅 리스너 연결됨:', chatRoomId);
-            }
+            console.log('채팅 시스템 초기화 완료');
         })();
     </script>
 </body>
